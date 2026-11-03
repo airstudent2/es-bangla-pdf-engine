@@ -34,60 +34,75 @@ function parseQuestionFile(filePath) {
     const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return null;
 
-    const title = lines[0];
+    let title = lines[0];
     let subtitle = '';
     let startIdx = 1;
 
-    if (lines.length > 1 && lines[1].toLowerCase().startsWith('mcq')) {
+    if (lines.length > 1 && (lines[1].toLowerCase().startsWith('mcq') || lines[1].includes('দ্বাদশ শ্রেণি'))) {
         subtitle = lines[1];
         startIdx = 2;
     }
 
-    const content = lines.slice(startIdx).join('\n');
     const questionBlocks = [];
+    let currentQ = null;
 
-    // Regex to capture Question, (ক), (খ), (গ), (ঘ), and Answer
-    const qRegex = /(?:^|\n)\s*(\d+)[\.\।\)]\s*([^\n]+(?:\n(?!\([কখগঘ]\))[^\n]+)*)\s*\n\s*\(ক\)\s*([^\n]+?)\s*(?:\n|\s{2,})\s*\(খ\)\s*([^\n]+?)\s*\n\s*\(গ\)\s*([^\n]+?)\s*(?:\n|\s{2,})\s*\(ঘ\)\s*([^\n]+?)\s*\n\s*(?:উত্তর|Ans)\s*[:\-\—\s]+\s*([^\n]+)/gi;
+    const qRegex = /^(?:প্রশ্ন\s*)?([০-৯\d]+)[\.\।\)]\s*(.*)/;
+    const optARegex = /^[\(\[]?(?:ক|A)[\)\]\.]\s*(.*)/;
+    const optBRegex = /^[\(\[]?(?:খ|B)[\)\]\.]\s*(.*)/;
+    const optCRegex = /^[\(\[]?(?:গ|C)[\)\]\.]\s*(.*)/;
+    const optDRegex = /^[\(\[]?(?:ঘ|D)[\)\]\.]\s*(.*)/;
+    const ansRegex = /^(?:[✓✔]\s*)?(?:সঠিক\s*)?উত্তর\s*[:\-\—\s]+\s*(.*)/;
 
-    let match;
-    while ((match = qRegex.exec(content)) !== null) {
-        questionBlocks.push({
-            number: match[1],
-            question: match[2].trim(),
-            optionA: match[3].trim(),
-            optionB: match[4].trim(),
-            optionC: match[5].trim(),
-            optionD: match[6].trim(),
-            answer: match[7].trim()
-        });
+    for (let i = startIdx; i < lines.length; i++) {
+        const line = lines[i];
+
+        const qMatch = line.match(qRegex);
+        if (qMatch && !line.startsWith('(ক)') && !line.startsWith('(খ)') && !line.startsWith('(গ)') && !line.startsWith('(ঘ)') && !line.startsWith('(A)') && !line.startsWith('(B)') && !line.startsWith('(C)') && !line.startsWith('(D)')) {
+            if (currentQ && currentQ.optionA && currentQ.answer) {
+                questionBlocks.push(currentQ);
+            }
+            currentQ = {
+                number: qMatch[1],
+                question: qMatch[2],
+                optionA: '',
+                optionB: '',
+                optionC: '',
+                optionD: '',
+                answer: ''
+            };
+            continue;
+        }
+
+        if (!currentQ) continue;
+
+        const aMatch = line.match(optARegex);
+        const bMatch = line.match(optBRegex);
+        const cMatch = line.match(optCRegex);
+        const dMatch = line.match(optDRegex);
+        const ansMatch = line.match(ansRegex);
+
+        if (aMatch) {
+            currentQ.optionA = aMatch[1].trim();
+        } else if (bMatch) {
+            currentQ.optionB = bMatch[1].trim();
+        } else if (cMatch) {
+            currentQ.optionC = cMatch[1].trim();
+        } else if (dMatch) {
+            currentQ.optionD = dMatch[1].trim();
+        } else if (ansMatch) {
+            let ansText = ansMatch[1].trim();
+            ansText = ansText.replace(/[\(\[]?A[\)\]\.]/g, '(ক)')
+                             .replace(/[\(\[]?B[\)\]\.]/g, '(খ)')
+                             .replace(/[\(\[]?C[\)\]\.]/g, '(গ)')
+                             .replace(/[\(\[]?D[\)\]\.]/g, '(ঘ)');
+            currentQ.answer = ansText;
+        } else if (!currentQ.optionA) {
+            currentQ.question += ' ' + line;
+        }
     }
 
-    // Fallback line-by-line state machine if regex didn't match all
-    if (questionBlocks.length === 0) {
-        let currentQ = null;
-        for (let i = 0; i < lines.slice(startIdx).length; i++) {
-            const line = lines.slice(startIdx)[i];
-            const qMatch = line.match(/^(\d+)[\.\।\)]\s*(.*)/);
-            if (qMatch) {
-                if (currentQ) questionBlocks.push(currentQ);
-                currentQ = { number: qMatch[1], question: qMatch[2], optionA: '', optionB: '', optionC: '', optionD: '', answer: '' };
-            } else if (currentQ) {
-                if (line.includes('(ক)')) {
-                    const parts = line.split(/(?=\([খঘ]\))/);
-                    currentQ.optionA = (parts[0] || '').replace('(ক)', '').trim();
-                    if (parts[1]) currentQ.optionB = parts[1].replace('(খ)', '').trim();
-                } else if (line.includes('(গ)')) {
-                    const parts = line.split(/(?=\([ঘ]\))/);
-                    currentQ.optionC = (parts[0] || '').replace('(গ)', '').trim();
-                    if (parts[1]) currentQ.optionD = parts[1].replace('(ঘ)', '').trim();
-                } else if (line.startsWith('উত্তর') || line.startsWith('Ans')) {
-                    currentQ.answer = line.replace(/^(?:উত্তর|Ans)[:\-\—\s]*/, '').trim();
-                } else if (!currentQ.optionA) {
-                    currentQ.question += ' ' + line;
-                }
-            }
-        }
-        if (currentQ) questionBlocks.push(currentQ);
+    if (currentQ && currentQ.optionA && currentQ.answer) {
+        questionBlocks.push(currentQ);
     }
 
     return { title, subtitle, questions: questionBlocks };
@@ -95,16 +110,12 @@ function parseQuestionFile(filePath) {
 
 // Smart paginator: Ensures 4 questions on Page 1 (with title) and balanced 4-5 on subsequent pages
 function paginateQuestions(questions) {
-    if (questions.length <= 4) {
-        return [questions];
-    }
+    if (questions.length <= 4) return [questions];
     if (questions.length <= 8) {
-        // Balanced 4 and 4 split for 8 questions
         const half = Math.ceil(questions.length / 2);
         return [questions.slice(0, half), questions.slice(half)];
     }
 
-    // General multi-page handling
     const pages = [];
     pages.push(questions.slice(0, 4)); // Page 1 gets 4 questions
     let remaining = questions.slice(4);
@@ -114,11 +125,20 @@ function paginateQuestions(questions) {
             pages.push(remaining);
             break;
         } else if (remaining.length === 6) {
-            // Split 3 and 3 rather than 5 and 1
             pages.push(remaining.slice(0, 3));
             pages.push(remaining.slice(3));
             break;
+        } else if (remaining.length === 7) {
+            pages.push(remaining.slice(0, 4));
+            pages.push(remaining.slice(4));
+            break;
         } else {
+            if (remaining.length === 11) {
+                pages.push(remaining.slice(0, 5));
+                pages.push(remaining.slice(5, 8));
+                pages.push(remaining.slice(8));
+                break;
+            }
             pages.push(remaining.slice(0, 5));
             remaining = remaining.slice(5);
         }
