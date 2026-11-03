@@ -108,48 +108,7 @@ function parseQuestionFile(filePath) {
     return { title, subtitle, questions: questionBlocks };
 }
 
-// Smart paginator: Ensures 4 questions on Page 1 (with title) and balanced 4-5 on subsequent pages
-function paginateQuestions(questions) {
-    if (questions.length <= 4) return [questions];
-    if (questions.length <= 8) {
-        const half = Math.ceil(questions.length / 2);
-        return [questions.slice(0, half), questions.slice(half)];
-    }
-
-    const pages = [];
-    pages.push(questions.slice(0, 4)); // Page 1 gets 4 questions
-    let remaining = questions.slice(4);
-
-    while (remaining.length > 0) {
-        if (remaining.length <= 5) {
-            pages.push(remaining);
-            break;
-        } else if (remaining.length === 6) {
-            pages.push(remaining.slice(0, 3));
-            pages.push(remaining.slice(3));
-            break;
-        } else if (remaining.length === 7) {
-            pages.push(remaining.slice(0, 4));
-            pages.push(remaining.slice(4));
-            break;
-        } else {
-            if (remaining.length === 11) {
-                pages.push(remaining.slice(0, 5));
-                pages.push(remaining.slice(5, 8));
-                pages.push(remaining.slice(8));
-                break;
-            }
-            pages.push(remaining.slice(0, 5));
-            remaining = remaining.slice(5);
-        }
-    }
-    return pages;
-}
-
 function generateHtml(data) {
-    const pages = paginateQuestions(data.questions);
-    const totalPages = pages.length;
-
     const fontFaceRules = regularBase64 && boldBase64 ? `
         @font-face {
             font-family: 'Noto Serif Bengali';
@@ -165,55 +124,18 @@ function generateHtml(data) {
         }
     ` : '';
 
-    const pagesHtml = pages.map((pageQuestions, pageIdx) => {
-        const isFirstPage = pageIdx === 0;
-        const isLastPage = pageIdx === totalPages - 1;
-
-        // User Rule: Watermark in background on EVERY page
-        // User Rule: Footer notice only 1-2 times (Page 1, or Page 1 and last page if > 5 pages)
-        const showNotice = (pageIdx === 0) || (totalPages > 5 && isLastPage);
-
-        const questionsHtml = pageQuestions.map(q => `
-            <div class="q-card">
-                <div class="q-title"><span class="q-num">${q.number}.</span> ${q.question}</div>
-                <div class="options-grid">
-                    <div class="option-item"><span class="opt-label">(ক)</span> ${q.optionA}</div>
-                    <div class="option-item"><span class="opt-label">(খ)</span> ${q.optionB}</div>
-                    <div class="option-item"><span class="opt-label">(গ)</span> ${q.optionC}</div>
-                    <div class="option-item"><span class="opt-label">(ঘ)</span> ${q.optionD}</div>
-                </div>
-                <div class="q-answer">উত্তর:- ${q.answer}</div>
+    const questionsHtml = data.questions.map(q => `
+        <div class="q-card">
+            <div class="q-title"><span class="q-num">${q.number}.</span> ${q.question}</div>
+            <div class="options-grid">
+                <div class="option-item"><span class="opt-label">(ক)</span> ${q.optionA}</div>
+                <div class="option-item"><span class="opt-label">(খ)</span> ${q.optionB}</div>
+                <div class="option-item"><span class="opt-label">(গ)</span> ${q.optionC}</div>
+                <div class="option-item"><span class="opt-label">(ঘ)</span> ${q.optionD}</div>
             </div>
-        `).join('');
-
-        return `
-            <div class="pdf-page">
-                <!-- Background Aesthetic Watermark on every page per user instruction -->
-                <div class="watermark">Es Bangla</div>
-
-                <!-- Page Content Area -->
-                <div class="page-body">
-                    ${isFirstPage ? `
-                        <div class="header-container">
-                            <h1 class="main-title">${data.title}</h1>
-                        </div>
-                        ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
-                    ` : ''}
-
-                    <div class="questions-list">
-                        ${questionsHtml}
-                    </div>
-                </div>
-
-                <!-- Footer: No page numbers, clean centered notice on Page 1 -->
-                ${showNotice ? `
-                    <div class="pdf-footer">
-                        <div class="pdf-footer-note">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
-                    </div>
-                ` : '<div class="pdf-footer-empty"></div>'}
-            </div>
-        `;
-    }).join('');
+            <div class="q-answer">উত্তর:- ${q.answer}</div>
+        </div>
+    `).join('');
 
     return `<!DOCTYPE html>
 <html lang="bn">
@@ -228,7 +150,7 @@ function generateHtml(data) {
 
         @page {
             size: 148mm 210mm; /* A5 Mobile-First Portrait */
-            margin: 0;
+            margin: 12mm 14mm 12mm 14mm; /* Guaranteed 14mm safe margins prevent text cutoff */
         }
 
         *, *::before, *::after {
@@ -237,7 +159,7 @@ function generateHtml(data) {
             padding: 0;
         }
 
-        html, body {
+        body {
             margin: 0;
             padding: 0;
             background-color: #FFFFFF;
@@ -247,36 +169,16 @@ function generateHtml(data) {
             print-color-adjust: exact;
         }
 
-        /* Dedicated A5 Page Container with Guaranteed Safe Margins */
-        .pdf-page {
-            width: 148mm;
-            height: 210mm;
-            padding: 12mm 14mm 9mm 14mm; /* 14mm safe margins prevent any clipping */
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            page-break-after: always;
-            break-after: page;
-            overflow: hidden;
-            background-color: #FFFFFF;
-        }
-
-        .pdf-page:last-child {
-            page-break-after: avoid;
-            break-after: avoid;
-        }
-
-        /* Diagonal Aesthetic Watermark - Sparse & Non-Intrusive */
+        /* Fixed Aesthetic Watermark - Automatically repeats on EVERY printed page */
         .watermark {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-28deg);
             font-family: 'Noto Serif Bengali', serif;
-            font-size: 50pt;
+            font-size: 52pt;
             font-weight: 700;
-            color: rgba(0, 102, 255, 0.055);
+            color: rgba(0, 102, 255, 0.055); /* Elegant, subtle 5.5% opacity */
             letter-spacing: 3px;
             pointer-events: none;
             z-index: 0;
@@ -284,17 +186,13 @@ function generateHtml(data) {
             user-select: none;
         }
 
-        .page-body {
-            position: relative;
-            z-index: 1;
-            flex: 1;
-        }
-
         .header-container {
             text-align: center;
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 1.5px solid #0066FF;
+            position: relative;
+            z-index: 1;
         }
 
         .main-title {
@@ -310,7 +208,7 @@ function generateHtml(data) {
 
         .subtitle-wrap {
             text-align: left;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .subtitle-badge {
@@ -323,15 +221,28 @@ function generateHtml(data) {
             border-radius: 4px;
         }
 
-        .questions-list {
-            display: flex;
-            flex-direction: column;
+        .notice-bar {
+            font-size: 8pt;
+            font-weight: 600;
+            color: #64748B;
+            letter-spacing: 0.2px;
+            text-align: center;
+            margin-top: 5px;
         }
 
-        /* Clean Question Card Spacing */
+        .questions-list {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Continuous Dynamic Card Flow:
+           Questions fill every page naturally without artificial gaps or hardcoded cutoffs.
+           break-inside: avoid ensures no question is sliced across pages. */
         .q-card {
-            margin-bottom: 11px;
-            padding-bottom: 9px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 1px dashed #E2E8F0;
         }
 
@@ -386,52 +297,31 @@ function generateHtml(data) {
             line-height: 1.35;
         }
 
-        /* Native Clean Footer Bar - NO BORDER LINE */
-        .pdf-footer {
-            position: relative;
-            z-index: 1;
-            margin-top: auto;
-            padding-top: 2mm;
-            border-top: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Noto Serif Bengali', serif;
-            color: #64748B;
-        }
-
-        .pdf-footer-note {
-            font-size: 8pt;
-            font-weight: 600;
-            color: #64748B;
-            letter-spacing: 0.2px;
-            text-align: center;
-        }
-
-        .pdf-footer-empty {
-            height: 0;
-            margin: 0;
-            padding: 0;
-        }
-
         @media screen {
             body {
                 background-color: #F1F5F9;
                 padding: 20px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
+                max-width: 600px;
+                margin: 0 auto;
             }
-            .pdf-page {
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                border-radius: 8px;
+            .header-container, .q-card {
+                background: #FFFFFF;
             }
         }
     </style>
 </head>
 <body>
-    ${pagesHtml}
+    <div class="watermark">Es Bangla</div>
+
+    <div class="header-container">
+        <h1 class="main-title">${data.title}</h1>
+        ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
+        <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+    </div>
+
+    <div class="questions-list">
+        ${questionsHtml}
+    </div>
 </body>
 </html>`;
 }
@@ -481,10 +371,10 @@ async function main() {
             printBackground: true,
             displayHeaderFooter: false,
             margin: {
-                top: '0mm',
-                bottom: '0mm',
-                left: '0mm',
-                right: '0mm'
+                top: '12mm',
+                bottom: '12mm',
+                left: '14mm',
+                right: '14mm'
             }
         });
 
