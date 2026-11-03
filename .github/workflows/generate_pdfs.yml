@@ -1,0 +1,49 @@
+name: Generate Educational PDFs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Build PDFs with Puppeteer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Generate PDFs
+        run: node scripts/build_pdfs.js
+
+      - name: Upload PDF Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: es-bangla-pdfs
+          path: output_pdfs/*.pdf
+          retention-days: 30
+
+      - name: Release PDFs
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main')
+        with:
+          tag_name: "v1.0.0"
+          name: "Es Bangla Educational Notes PDFs"
+          draft: false
+          prerelease: false
+          files: output_pdfs/*.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

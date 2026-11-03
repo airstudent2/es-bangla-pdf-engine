@@ -1,0 +1,12 @@
+{
+  "name": "es-bangla-pdf-engine",
+  "version": "1.0.0",
+  "description": "Automated Bengali Educational PDF Generation Engine for Es Bangla",
+  "main": "scripts/build_pdfs.js",
+  "scripts": {
+    "build": "node scripts/build_pdfs.js"
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}
