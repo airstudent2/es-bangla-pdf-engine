@@ -5,9 +5,24 @@ const puppeteer = require('puppeteer');
 const QUESTIONS_DIR = path.join(__dirname, '..', 'questions');
 const OUTPUT_DIR = path.join(__dirname, '..', 'output_pdfs');
 const HTML_DIR = path.join(__dirname, '..', 'output_html');
+const FONTS_DIR = path.join(__dirname, '..', 'fonts');
 
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 if (!fs.existsSync(HTML_DIR)) fs.mkdirSync(HTML_DIR, { recursive: true });
+
+// Read local TTF fonts and encode as Base64 for 100% bulletproof offline rendering
+let regularBase64 = '';
+let boldBase64 = '';
+
+const regularFontPath = path.join(FONTS_DIR, 'NotoSerifBengali-Regular.ttf');
+const boldFontPath = path.join(FONTS_DIR, 'NotoSerifBengali-Bold.ttf');
+
+if (fs.existsSync(regularFontPath)) {
+    regularBase64 = fs.readFileSync(regularFontPath).toString('base64');
+}
+if (fs.existsSync(boldFontPath)) {
+    boldBase64 = fs.readFileSync(boldFontPath).toString('base64');
+}
 
 function parseQuestionFile(filePath) {
     const raw = fs.readFileSync(filePath, 'utf8');
@@ -42,9 +57,8 @@ function parseQuestionFile(filePath) {
         });
     }
 
-    // Fallback parser if regex didn't match all
+    // Fallback line-by-line state machine if regex didn't match all
     if (questionBlocks.length === 0) {
-        // Line by line state machine
         let currentQ = null;
         for (let i = 0; i < lines.slice(startIdx).length; i++) {
             const line = lines.slice(startIdx)[i];
@@ -88,6 +102,23 @@ function generateHtml(data) {
         </div>
     `).join('');
 
+    const fontFaceRules = regularBase64 && boldBase64 ? `
+        @font-face {
+            font-family: 'Noto Serif Bengali';
+            src: url('data:font/truetype;charset=utf-8;base64,${regularBase64}') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Noto Serif Bengali';
+            src: url('data:font/truetype;charset=utf-8;base64,${boldBase64}') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+    ` : '';
+
     return `<!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -97,23 +128,11 @@ function generateHtml(data) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        ${fontFaceRules}
+
         @page {
-            size: 148mm 210mm; /* Mobile-First A5 Portrait Reading Ratio */
-            margin: 14mm 12mm 15mm 12mm;
-            @bottom-left {
-                content: "© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে";
-                font-family: 'Noto Serif Bengali', serif;
-                font-size: 8pt;
-                font-weight: 600;
-                color: #64748B;
-            }
-            @bottom-right {
-                content: "পৃষ্ঠা " counter(page) " / " counter(pages);
-                font-family: 'Noto Serif Bengali', serif;
-                font-size: 8.5pt;
-                font-weight: 700;
-                color: #0066FF;
-            }
+            size: 148mm 210mm; /* A5 Mobile-First Portrait */
+            margin: 0; /* Let Puppeteer margins govern the printable area */
         }
 
         * {
@@ -123,24 +142,28 @@ function generateHtml(data) {
         }
 
         body {
-            font-family: 'Noto Serif Bengali', serif;
+            font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', serif;
             background-color: #FFFFFF;
             color: #111827;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             position: relative;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 1.45;
         }
 
-        /* Subtle, Aesthetic Non-Intrusive Watermark (3.5% Opacity) */
+        /* Diagonal Aesthetic Watermark (5.5% Opacity - Clearly visible yet 100% non-intrusive) */
         .watermark {
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-32deg);
-            font-size: 56pt;
+            transform: translate(-50%, -50%) rotate(-28deg);
+            font-family: 'Noto Serif Bengali', serif;
+            font-size: 48pt;
             font-weight: 700;
-            color: rgba(0, 102, 255, 0.038);
-            letter-spacing: 4px;
+            color: rgba(0, 102, 255, 0.055);
+            letter-spacing: 2.5px;
             pointer-events: none;
             z-index: 0;
             white-space: nowrap;
@@ -149,29 +172,32 @@ function generateHtml(data) {
 
         .header-container {
             text-align: center;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
-            border-bottom: 1.5px solid #E2E8F0;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1.5px solid #0066FF;
         }
 
         .main-title {
-            font-size: 17.5pt;
+            font-size: 15pt;
             font-weight: 700;
             color: #0066FF;
-            line-height: 1.35;
+            line-height: 1.32;
             text-decoration: underline;
             text-decoration-color: #0066FF;
-            text-underline-offset: 5px;
-            margin-bottom: 6px;
+            text-underline-offset: 4px;
+            margin-bottom: 4px;
         }
 
-        .subtitle {
-            font-size: 12.5pt;
+        .subtitle-badge {
+            display: inline-block;
+            font-size: 10.5pt;
             font-weight: 700;
             color: #0066FF;
-            text-align: left;
-            margin-top: 4px;
-            margin-bottom: 10px;
+            background: rgba(0, 102, 255, 0.08);
+            padding: 1px 9px;
+            border-radius: 4px;
+            margin-top: 2px;
+            margin-bottom: 6px;
         }
 
         .questions-list {
@@ -179,24 +205,27 @@ function generateHtml(data) {
             z-index: 1;
         }
 
+        /* Compact & Balanced Card Spacing - Fits 4 questions per A5 page with zero waste */
         .q-card {
             page-break-inside: avoid;
             break-inside: avoid;
-            margin-bottom: 14px;
-            padding-bottom: 10px;
+            margin-bottom: 9px;
+            padding-bottom: 8px;
             border-bottom: 1px dashed #E2E8F0;
         }
 
         .q-card:last-child {
             border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
         .q-title {
-            font-size: 12.8pt;
+            font-size: 11.2pt;
             font-weight: 400; /* Regular per user rule */
             color: #111827; /* Jet Black */
-            line-height: 1.55;
-            margin-bottom: 7px;
+            line-height: 1.45;
+            margin-bottom: 4px;
         }
 
         .q-title strong {
@@ -207,41 +236,37 @@ function generateHtml(data) {
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            column-gap: 14px;
-            row-gap: 5px;
-            margin-bottom: 6px;
-            padding-left: 4px;
+            column-gap: 12px;
+            row-gap: 3px;
+            margin-bottom: 4px;
+            padding-left: 2px;
         }
 
         .option-item {
-            font-size: 11.8pt;
+            font-size: 10.2pt;
             font-weight: 400; /* Regular per user rule */
             color: #1F2937; /* Jet Black */
-            line-height: 1.45;
+            line-height: 1.38;
         }
 
         .opt-label {
             font-weight: 600;
-            color: #374151;
+            color: #4B5563;
             margin-right: 2px;
         }
 
         .q-answer {
-            font-size: 12pt;
+            font-size: 10.8pt;
             font-weight: 700; /* Bold per user rule */
             color: #0066FF; /* Royal Blue */
-            margin-top: 4px;
-            padding-left: 4px;
-            line-height: 1.4;
-        }
-
-        .footer-bar {
-            display: none; /* Handled by @page margin boxes in print mode */
+            margin-top: 3px;
+            padding-left: 2px;
+            line-height: 1.35;
         }
 
         @media screen {
             body {
-                max-width: 650px;
+                max-width: 600px;
                 margin: 20px auto;
                 padding: 24px;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.08);
@@ -257,13 +282,57 @@ function generateHtml(data) {
         <h1 class="main-title">${data.title}</h1>
     </div>
 
-    ${data.subtitle ? `<div class="subtitle">${data.subtitle}</div>` : ''}
+    ${data.subtitle ? `<div style="text-align: left;"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
 
     <div class="questions-list">
         ${questionsHtml}
     </div>
 </body>
 </html>`;
+}
+
+function buildFooterTemplate() {
+    const fontFaceRules = regularBase64 && boldBase64 ? `
+        @font-face {
+            font-family: 'Noto Serif Bengali';
+            src: url('data:font/truetype;charset=utf-8;base64,${regularBase64}') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Noto Serif Bengali';
+            src: url('data:font/truetype;charset=utf-8;base64,${boldBase64}') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+    ` : '';
+
+    return `
+        <style>
+            ${fontFaceRules}
+            .pdf-footer {
+                width: 100%;
+                margin: 0;
+                padding: 0 11mm;
+                box-sizing: border-box;
+                font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', sans-serif !important;
+                font-size: 8pt;
+                line-height: 1;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: #64748B;
+                border-top: 0.6px solid #CBD5E1;
+                padding-top: 1.8mm;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        </style>
+        <div class="pdf-footer">
+            <span style="font-weight: 600;">© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</span>
+            <span style="color: #0066FF; font-weight: 700;">পৃষ্ঠা <span class="pageNumber"></span> / <span class="totalPages"></span></span>
+        </div>
+    `;
 }
 
 async function main() {
@@ -277,7 +346,12 @@ async function main() {
 
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--font-render-hinting=none',
+            '--enable-font-antialiasing'
+        ]
     });
 
     for (const file of files) {
@@ -306,17 +380,12 @@ async function main() {
             printBackground: true,
             displayHeaderFooter: true,
             headerTemplate: '<div></div>',
-            footerTemplate: `
-                <div style="width: 100%; font-family: 'Noto Serif Bengali', serif; font-size: 8pt; display: flex; justify-content: space-between; padding: 0 14mm; color: #64748B;">
-                    <span>© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</span>
-                    <span style="color: #0066FF; font-weight: bold;">পৃষ্ঠা <span class="pageNumber"></span> / <span class="totalPages"></span></span>
-                </div>
-            `,
+            footerTemplate: buildFooterTemplate(),
             margin: {
-                top: '12mm',
-                bottom: '15mm',
-                left: '12mm',
-                right: '12mm'
+                top: '10mm',
+                bottom: '12mm',
+                left: '11mm',
+                right: '11mm'
             }
         });
 
