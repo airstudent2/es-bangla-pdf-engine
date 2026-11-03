@@ -268,7 +268,7 @@ function generateHtml(data) {
 
 async function main() {
     const files = fs.readdirSync(QUESTIONS_DIR).filter(f => f.endsWith('.txt'));
-    console.log(\`Found \${files.length} question files to process.\`);
+    console.log(`Found ${files.length} question files to process.`);
 
     if (files.length === 0) {
         console.log('No txt files in questions/ directory.');
@@ -284,34 +284,34 @@ async function main() {
         const fullPath = path.join(QUESTIONS_DIR, file);
         const data = parseQuestionFile(fullPath);
         if (!data || data.questions.length === 0) {
-            console.log(\`Skipping \${file} (no questions parsed).\`);
+            console.log(`Skipping ${file} (no questions parsed).`);
             continue;
         }
 
-        console.log(\`Parsed \${data.questions.length} questions from \${file}\`);
+        console.log(`Parsed ${data.questions.length} questions from ${file}`);
 
         const htmlContent = generateHtml(data);
         const baseName = path.basename(file, '.txt');
-        const htmlPath = path.join(HTML_DIR, \`\${baseName}.html\`);
+        const htmlPath = path.join(HTML_DIR, `${baseName}.html`);
         fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log(\`Saved HTML preview to \${htmlPath}\`);
+        console.log(`Saved HTML preview to ${htmlPath}`);
 
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-        const pdfPath = path.join(OUTPUT_DIR, \`\${baseName}.pdf\`);
+        const pdfPath = path.join(OUTPUT_DIR, `${baseName}.pdf`);
         await page.pdf({
             path: pdfPath,
             format: 'A5',
             printBackground: true,
             displayHeaderFooter: true,
             headerTemplate: '<div></div>',
-            footerTemplate: \`
+            footerTemplate: `
                 <div style="width: 100%; font-family: 'Noto Serif Bengali', serif; font-size: 8pt; display: flex; justify-content: space-between; padding: 0 14mm; color: #64748B;">
                     <span>© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</span>
                     <span style="color: #0066FF; font-weight: bold;">পৃষ্ঠা <span class="pageNumber"></span> / <span class="totalPages"></span></span>
                 </div>
-            \`,
+            `,
             margin: {
                 top: '12mm',
                 bottom: '15mm',
@@ -320,7 +320,7 @@ async function main() {
             }
         });
 
-        console.log(\`Generated PDF: \${pdfPath}\`);
+        console.log(`Generated PDF: ${pdfPath}`);
         await page.close();
     }
 
