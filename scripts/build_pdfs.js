@@ -270,12 +270,10 @@ function generateHtml(data) {
         .q-card {
             position: relative;
             z-index: 1;
-            padding-bottom: 6px;
-            border-bottom: 1px dashed #CBD5E1;
+            padding-bottom: 2px;
         }
 
         .q-card.last-card {
-            border-bottom: none;
             padding-bottom: 0;
         }
 
