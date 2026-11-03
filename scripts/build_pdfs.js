@@ -150,7 +150,7 @@ function generateHtml(data) {
 
         @page {
             size: 148mm 210mm; /* A5 Mobile-First Portrait */
-            margin: 12mm 14mm 12mm 14mm; /* Guaranteed 14mm safe margins prevent text cutoff */
+            margin: 0;
         }
 
         *, *::before, *::after {
@@ -169,9 +169,29 @@ function generateHtml(data) {
             print-color-adjust: exact;
         }
 
-        /* Fixed Aesthetic Watermark - Automatically repeats on EVERY printed page */
+        /* Dedicated A5 Page Container */
+        .pdf-page {
+            width: 148mm;
+            height: 210mm;
+            box-sizing: border-box;
+            padding: 10mm 13mm; /* 13mm safe left/right margin, 10mm top/bottom */
+            position: relative;
+            page-break-after: always;
+            break-after: page;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #FFFFFF;
+        }
+
+        .pdf-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* Diagonal Aesthetic Watermark - on EVERY page */
         .watermark {
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-28deg);
@@ -188,36 +208,36 @@ function generateHtml(data) {
 
         .header-container {
             text-align: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 1.5px solid #0066FF;
             position: relative;
             z-index: 1;
         }
 
         .main-title {
-            font-size: 15.5pt;
+            font-size: 14pt;
             font-weight: 700;
             color: #0066FF;
-            line-height: 1.35;
+            line-height: 1.32;
             text-decoration: underline;
             text-decoration-color: #0066FF;
-            text-underline-offset: 4px;
-            margin-bottom: 4px;
+            text-underline-offset: 3px;
+            margin-bottom: 3px;
         }
 
         .subtitle-wrap {
             text-align: left;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .subtitle-badge {
             display: inline-block;
-            font-size: 10.5pt;
+            font-size: 10pt;
             font-weight: 700;
             color: #0066FF;
             background: rgba(0, 102, 255, 0.08);
-            padding: 2px 9px;
+            padding: 2px 8px;
             border-radius: 4px;
         }
 
@@ -227,37 +247,44 @@ function generateHtml(data) {
             color: #64748B;
             letter-spacing: 0.2px;
             text-align: center;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
-        .questions-list {
+        /* Flex container that naturally spans the full page height */
+        .page-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Fills the page completely from top to bottom */
             position: relative;
             z-index: 1;
+            min-height: 0;
         }
 
-        /* Continuous Dynamic Card Flow:
-           Questions fill every page naturally without artificial gaps or hardcoded cutoffs.
-           break-inside: avoid ensures no question is sliced across pages. */
+        /* Last page does not stretch unnaturally if only 1-2 questions remain */
+        .pdf-page.last-page .page-content {
+            justify-content: flex-start;
+            gap: 12px;
+        }
+
         .q-card {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #E2E8F0;
+            position: relative;
+            z-index: 1;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #CBD5E1;
         }
 
-        .q-card:last-child {
+        .q-card.last-card {
             border-bottom: none;
-            margin-bottom: 0;
             padding-bottom: 0;
         }
 
         .q-title {
-            font-size: 11.5pt;
+            font-size: 10.8pt;
             font-weight: 400; /* Regular per user rule */
             color: #111827; /* Jet Black */
-            line-height: 1.48;
-            margin-bottom: 5px;
+            line-height: 1.4;
+            margin-bottom: 3px;
         }
 
         .q-num {
@@ -269,17 +296,17 @@ function generateHtml(data) {
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            column-gap: 14px;
-            row-gap: 4px;
-            margin-bottom: 5px;
+            column-gap: 12px;
+            row-gap: 3px;
+            margin-bottom: 3px;
             padding-left: 1px;
         }
 
         .option-item {
-            font-size: 10.5pt;
+            font-size: 9.8pt;
             font-weight: 400; /* Regular per user rule */
             color: #1F2937; /* Jet Black */
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .opt-label {
@@ -289,39 +316,50 @@ function generateHtml(data) {
         }
 
         .q-answer {
-            font-size: 11pt;
+            font-size: 10.2pt;
             font-weight: 700; /* Bold per user rule */
             color: #0066FF; /* Royal Blue */
-            margin-top: 3px;
+            margin-top: 2px;
             padding-left: 1px;
-            line-height: 1.35;
+            line-height: 1.32;
+        }
+
+        /* Measurement stage styles */
+        #measure-container {
+            width: 122mm; /* Exactly 148mm - 26mm padding */
+            margin: 0 auto;
         }
 
         @media screen {
             body {
                 background-color: #F1F5F9;
                 padding: 20px;
-                max-width: 600px;
-                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
             }
-            .header-container, .q-card {
-                background: #FFFFFF;
+            .pdf-page {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                border-radius: 6px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="watermark">Es Bangla</div>
+    <div id="measure-container">
+        <div id="raw-header" class="header-container">
+            <h1 class="main-title">${data.title}</h1>
+            ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
+            <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+        </div>
 
-    <div class="header-container">
-        <h1 class="main-title">${data.title}</h1>
-        ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
-        <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+        <div id="raw-questions">
+            ${questionsHtml}
+        </div>
     </div>
 
-    <div class="questions-list">
-        ${questionsHtml}
-    </div>
+    <div id="paged-output"></div>
 </body>
 </html>`;
 }
@@ -357,24 +395,128 @@ async function main() {
 
         const htmlContent = generateHtml(data);
         const baseName = path.basename(file, '.txt');
-        const htmlPath = path.join(HTML_DIR, `${baseName}.html`);
-        fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log(`Saved HTML preview to ${htmlPath}`);
-
         const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
+        // Load the HTML and wait for fonts
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        await page.evaluateHandle('document.fonts.ready');
+
+        // Execute dynamic optimal page distribution
+        const stats = await page.evaluate(() => {
+            const cal = document.createElement('div');
+            cal.style.height = '1mm';
+            document.body.appendChild(cal);
+            const pxPerMm = cal.getBoundingClientRect().height;
+            cal.remove();
+
+            // Printable area for A5 (210mm x 148mm) with 10mm top/bottom padding: 190mm
+            const printableHeightPx = 190 * pxPerMm;
+
+            const headerEl = document.getElementById('raw-header');
+            const headerHeightPx = headerEl ? headerEl.offsetHeight : 0;
+            // Page 1 available height for questions (subtracting header and small margin)
+            const page1TargetPx = printableHeightPx - headerHeightPx - (4 * pxPerMm);
+
+            const rawCards = Array.from(document.querySelectorAll('#raw-questions .q-card'));
+
+            // Greedy optimal packing
+            const pages = [];
+            let curPage = [];
+            let curH = 0;
+            const minGap = 8; // min gap in px
+
+            for (let i = 0; i < rawCards.length; i++) {
+                const card = rawCards[i];
+                const h = card.offsetHeight;
+                const target = pages.length === 0 ? page1TargetPx : printableHeightPx;
+                const needed = curPage.length === 0 ? h : (h + minGap);
+
+                if (curH + needed <= target) {
+                    curPage.push(card);
+                    curH += needed;
+                } else {
+                    if (curPage.length === 0) {
+                        curPage.push(card);
+                        pages.push(curPage);
+                        curPage = [];
+                        curH = 0;
+                    } else {
+                        pages.push(curPage);
+                        curPage = [card];
+                        curH = h;
+                    }
+                }
+            }
+            if (curPage.length > 0) {
+                pages.push(curPage);
+            }
+
+            // Build final paged DOM
+            const pagedOutput = document.getElementById('paged-output');
+            pagedOutput.innerHTML = '';
+
+            pages.forEach((pageCards, pIdx) => {
+                const isFirst = (pIdx === 0);
+                const isLast = (pIdx === pages.length - 1);
+
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page' + (isLast ? ' last-page' : '');
+
+                // Watermark on every page
+                const wm = document.createElement('div');
+                wm.className = 'watermark';
+                wm.textContent = 'Es Bangla';
+                pageDiv.appendChild(wm);
+
+                // Header on page 1 only
+                if (isFirst && headerEl) {
+                    pageDiv.appendChild(headerEl.cloneNode(true));
+                }
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'page-content';
+
+                pageCards.forEach((c, cIdx) => {
+                    const clone = c.cloneNode(true);
+                    if (cIdx === pageCards.length - 1) {
+                        clone.classList.add('last-card');
+                    }
+                    contentDiv.appendChild(clone);
+                });
+
+                pageDiv.appendChild(contentDiv);
+                pagedOutput.appendChild(pageDiv);
+            });
+
+            // Remove measurement container
+            document.getElementById('measure-container').remove();
+
+            return {
+                totalPages: pages.length,
+                counts: pages.map(p => p.length)
+            };
+        });
+
+        console.log(`Packed ${data.questions.length} questions into ${stats.totalPages} pages. First 10 page counts:`, stats.counts.slice(0, 10));
+
+        // Save final paged HTML preview
+        const finalHtml = await page.content();
+        const htmlPath = path.join(HTML_DIR, `${baseName}.html`);
+        fs.writeFileSync(htmlPath, finalHtml, 'utf8');
+
+        // Generate PDF with exact A5 dimensions and 0 margin (since padding is in .pdf-page)
         const pdfPath = path.join(OUTPUT_DIR, `${baseName}.pdf`);
         await page.pdf({
             path: pdfPath,
             format: 'A5',
             printBackground: true,
             displayHeaderFooter: false,
+            preferCSSPageSize: true,
             margin: {
-                top: '12mm',
-                bottom: '12mm',
-                left: '14mm',
-                right: '14mm'
+                top: '0mm',
+                bottom: '0mm',
+                left: '0mm',
+                right: '0mm'
             }
         });
 
@@ -390,3 +532,4 @@ main().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);
 });
+
