@@ -37,16 +37,15 @@ function parseQuestionFile(filePath) {
     const isEnglish = path.basename(filePath).startsWith('english_');
 
     let title = lines[0];
-    let subtitle = '';
     let startIdx = 1;
 
     if (lines.length > 1 && (
         lines[1].toLowerCase().startsWith('mcq') ||
         lines[1].includes('দ্বাদশ শ্রেণি') ||
         lines[1].includes('Class 12') ||
-        lines[1].includes('Semester')
+        lines[1].includes('Semester') ||
+        lines[1].includes('সেমিস্টার')
     )) {
-        subtitle = lines[1];
         startIdx = 2;
     }
 
@@ -122,7 +121,7 @@ function parseQuestionFile(filePath) {
         questionBlocks.push(currentQ);
     }
 
-    return { title, subtitle, isEnglish, questions: questionBlocks };
+    return { title, isEnglish, questions: questionBlocks };
 }
 
 function generateHtml(data) {
@@ -253,20 +252,6 @@ function generateHtml(data) {
             margin-bottom: 3px;
         }
 
-        .subtitle-wrap {
-            text-align: left;
-            margin-bottom: 4px;
-        }
-
-        .subtitle-badge {
-            display: inline-block;
-            font-size: 10pt;
-            font-weight: 700;
-            color: #0066FF;
-            background: rgba(0, 102, 255, 0.08);
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
 
         .notice-bar {
             font-size: 8pt;
@@ -385,7 +370,6 @@ function generateHtml(data) {
     <div id="measure-container">
         <div id="raw-header" class="header-container">
             <h1 class="main-title">${data.title}</h1>
-            ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
             <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
         </div>
 
