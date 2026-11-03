@@ -10,7 +10,7 @@ const FONTS_DIR = path.join(__dirname, '..', 'fonts');
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 if (!fs.existsSync(HTML_DIR)) fs.mkdirSync(HTML_DIR, { recursive: true });
 
-// Read local TTF fonts and encode as Base64 for 100% bulletproof offline rendering
+// Read local TTF fonts and encode as Base64 for 100% offline and standalone rendering
 let regularBase64 = '';
 let boldBase64 = '';
 
@@ -22,6 +22,11 @@ if (fs.existsSync(regularFontPath)) {
 }
 if (fs.existsSync(boldFontPath)) {
     boldBase64 = fs.readFileSync(boldFontPath).toString('base64');
+}
+
+function toBengaliNumber(num) {
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return String(num).split('').map(d => bnDigits[parseInt(d, 10)] || d).join('');
 }
 
 function parseQuestionFile(filePath) {
@@ -88,19 +93,42 @@ function parseQuestionFile(filePath) {
     return { title, subtitle, questions: questionBlocks };
 }
 
+// Smart paginator: Ensures 4 questions on Page 1 (with title) and balanced 4-5 on subsequent pages
+function paginateQuestions(questions) {
+    if (questions.length <= 4) {
+        return [questions];
+    }
+    if (questions.length <= 8) {
+        // Balanced 4 and 4 split for 8 questions
+        const half = Math.ceil(questions.length / 2);
+        return [questions.slice(0, half), questions.slice(half)];
+    }
+
+    // General multi-page handling
+    const pages = [];
+    pages.push(questions.slice(0, 4)); // Page 1 gets 4 questions
+    let remaining = questions.slice(4);
+
+    while (remaining.length > 0) {
+        if (remaining.length <= 5) {
+            pages.push(remaining);
+            break;
+        } else if (remaining.length === 6) {
+            // Split 3 and 3 rather than 5 and 1
+            pages.push(remaining.slice(0, 3));
+            pages.push(remaining.slice(3));
+            break;
+        } else {
+            pages.push(remaining.slice(0, 5));
+            remaining = remaining.slice(5);
+        }
+    }
+    return pages;
+}
+
 function generateHtml(data) {
-    const questionsHtml = data.questions.map(q => `
-        <div class="q-card">
-            <div class="q-title"><strong>${q.number}.</strong> ${q.question}</div>
-            <div class="options-grid">
-                <div class="option-item"><span class="opt-label">(ক)</span> ${q.optionA}</div>
-                <div class="option-item"><span class="opt-label">(খ)</span> ${q.optionB}</div>
-                <div class="option-item"><span class="opt-label">(গ)</span> ${q.optionC}</div>
-                <div class="option-item"><span class="opt-label">(ঘ)</span> ${q.optionD}</div>
-            </div>
-            <div class="q-answer">উত্তর:- ${q.answer}</div>
-        </div>
-    `).join('');
+    const pages = paginateQuestions(data.questions);
+    const totalPages = pages.length;
 
     const fontFaceRules = regularBase64 && boldBase64 ? `
         @font-face {
@@ -108,16 +136,58 @@ function generateHtml(data) {
             src: url('data:font/truetype;charset=utf-8;base64,${regularBase64}') format('truetype');
             font-weight: 400;
             font-style: normal;
-            font-display: swap;
         }
         @font-face {
             font-family: 'Noto Serif Bengali';
             src: url('data:font/truetype;charset=utf-8;base64,${boldBase64}') format('truetype');
             font-weight: 700;
             font-style: normal;
-            font-display: swap;
         }
     ` : '';
+
+    const pagesHtml = pages.map((pageQuestions, pageIdx) => {
+        const isFirstPage = pageIdx === 0;
+
+        const questionsHtml = pageQuestions.map(q => `
+            <div class="q-card">
+                <div class="q-title"><span class="q-num">${q.number}.</span> ${q.question}</div>
+                <div class="options-grid">
+                    <div class="option-item"><span class="opt-label">(ক)</span> ${q.optionA}</div>
+                    <div class="option-item"><span class="opt-label">(খ)</span> ${q.optionB}</div>
+                    <div class="option-item"><span class="opt-label">(গ)</span> ${q.optionC}</div>
+                    <div class="option-item"><span class="opt-label">(ঘ)</span> ${q.optionD}</div>
+                </div>
+                <div class="q-answer">উত্তর:- ${q.answer}</div>
+            </div>
+        `).join('');
+
+        return `
+            <div class="pdf-page">
+                <!-- Background Aesthetic Watermark -->
+                <div class="watermark">Es Bangla</div>
+
+                <!-- Page Content Area -->
+                <div class="page-body">
+                    ${isFirstPage ? `
+                        <div class="header-container">
+                            <h1 class="main-title">${data.title}</h1>
+                        </div>
+                        ${data.subtitle ? `<div class="subtitle-wrap"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
+                    ` : ''}
+
+                    <div class="questions-list">
+                        ${questionsHtml}
+                    </div>
+                </div>
+
+                <!-- Native In-Page Footer with Full Bengali Typography -->
+                <div class="pdf-footer">
+                    <div class="pdf-footer-left">© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+                    <div class="pdf-footer-right">পৃষ্ঠা ${toBengaliNumber(pageIdx + 1)} / ${toBengaliNumber(totalPages)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
 
     return `<!DOCTYPE html>
 <html lang="bn">
@@ -132,42 +202,66 @@ function generateHtml(data) {
 
         @page {
             size: 148mm 210mm; /* A5 Mobile-First Portrait */
-            margin: 0; /* Let Puppeteer margins govern the printable area */
+            margin: 0;
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', serif;
+        html, body {
+            margin: 0;
+            padding: 0;
             background-color: #FFFFFF;
+            font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', serif;
             color: #111827;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            position: relative;
-            padding: 0;
-            font-size: 11pt;
-            line-height: 1.45;
         }
 
-        /* Diagonal Aesthetic Watermark (5.5% Opacity - Clearly visible yet 100% non-intrusive) */
+        /* Dedicated A5 Page Container with Guaranteed Safe Margins */
+        .pdf-page {
+            width: 148mm;
+            height: 210mm;
+            padding: 12mm 14mm 9mm 14mm; /* 14mm left/right safe margin prevents any text cutoff */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            page-break-after: always;
+            break-after: page;
+            overflow: hidden;
+            background-color: #FFFFFF;
+        }
+
+        .pdf-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        /* Diagonal Aesthetic Watermark - Perfectly Centered in Page Container */
         .watermark {
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-28deg);
             font-family: 'Noto Serif Bengali', serif;
-            font-size: 48pt;
+            font-size: 50pt;
             font-weight: 700;
-            color: rgba(0, 102, 255, 0.055);
-            letter-spacing: 2.5px;
+            color: rgba(0, 102, 255, 0.055); /* Clearly visible yet completely non-intrusive */
+            letter-spacing: 3px;
             pointer-events: none;
             z-index: 0;
             white-space: nowrap;
             user-select: none;
+        }
+
+        .page-body {
+            position: relative;
+            z-index: 1;
+            flex: 1;
         }
 
         .header-container {
@@ -178,14 +272,19 @@ function generateHtml(data) {
         }
 
         .main-title {
-            font-size: 15pt;
+            font-size: 15.5pt;
             font-weight: 700;
             color: #0066FF;
-            line-height: 1.32;
+            line-height: 1.35;
             text-decoration: underline;
             text-decoration-color: #0066FF;
             text-underline-offset: 4px;
             margin-bottom: 4px;
+        }
+
+        .subtitle-wrap {
+            text-align: left;
+            margin-bottom: 8px;
         }
 
         .subtitle-badge {
@@ -194,23 +293,19 @@ function generateHtml(data) {
             font-weight: 700;
             color: #0066FF;
             background: rgba(0, 102, 255, 0.08);
-            padding: 1px 9px;
+            padding: 2px 9px;
             border-radius: 4px;
-            margin-top: 2px;
-            margin-bottom: 6px;
         }
 
         .questions-list {
-            position: relative;
-            z-index: 1;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Compact & Balanced Card Spacing - Fits 4 questions per A5 page with zero waste */
+        /* Clean Question Card Spacing */
         .q-card {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-bottom: 9px;
-            padding-bottom: 8px;
+            margin-bottom: 11px;
+            padding-bottom: 9px;
             border-bottom: 1px dashed #E2E8F0;
         }
 
@@ -221,118 +316,97 @@ function generateHtml(data) {
         }
 
         .q-title {
-            font-size: 11.2pt;
+            font-size: 11.5pt;
             font-weight: 400; /* Regular per user rule */
             color: #111827; /* Jet Black */
-            line-height: 1.45;
-            margin-bottom: 4px;
+            line-height: 1.48;
+            margin-bottom: 5px;
         }
 
-        .q-title strong {
+        .q-num {
             font-weight: 700;
             color: #111827;
+            margin-right: 3px;
         }
 
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            column-gap: 12px;
-            row-gap: 3px;
-            margin-bottom: 4px;
-            padding-left: 2px;
+            column-gap: 14px;
+            row-gap: 4px;
+            margin-bottom: 5px;
+            padding-left: 1px;
         }
 
         .option-item {
-            font-size: 10.2pt;
+            font-size: 10.5pt;
             font-weight: 400; /* Regular per user rule */
             color: #1F2937; /* Jet Black */
-            line-height: 1.38;
+            line-height: 1.4;
         }
 
         .opt-label {
             font-weight: 600;
-            color: #4B5563;
-            margin-right: 2px;
+            color: #374151;
+            margin-right: 3px;
         }
 
         .q-answer {
-            font-size: 10.8pt;
+            font-size: 11pt;
             font-weight: 700; /* Bold per user rule */
             color: #0066FF; /* Royal Blue */
             margin-top: 3px;
-            padding-left: 2px;
+            padding-left: 1px;
             line-height: 1.35;
+        }
+
+        /* Native Clean Footer Bar */
+        .pdf-footer {
+            position: relative;
+            z-index: 1;
+            margin-top: auto;
+            padding-top: 2.5mm;
+            border-top: 0.8px solid #CBD5E1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Noto Serif Bengali', serif;
+            color: #64748B;
+        }
+
+        .pdf-footer-left {
+            font-size: 8pt;
+            font-weight: 600;
+            color: #64748B;
+            letter-spacing: 0.2px;
+        }
+
+        .pdf-footer-right {
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: #0066FF;
         }
 
         @media screen {
             body {
-                max-width: 600px;
-                margin: 20px auto;
-                padding: 24px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-                border-radius: 12px;
+                background-color: #F1F5F9;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            .pdf-page {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                border-radius: 8px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="watermark">Es Bangla</div>
-
-    <div class="header-container">
-        <h1 class="main-title">${data.title}</h1>
-    </div>
-
-    ${data.subtitle ? `<div style="text-align: left;"><span class="subtitle-badge">${data.subtitle}</span></div>` : ''}
-
-    <div class="questions-list">
-        ${questionsHtml}
-    </div>
+    ${pagesHtml}
 </body>
 </html>`;
-}
-
-function buildFooterTemplate() {
-    const fontFaceRules = regularBase64 && boldBase64 ? `
-        @font-face {
-            font-family: 'Noto Serif Bengali';
-            src: url('data:font/truetype;charset=utf-8;base64,${regularBase64}') format('truetype');
-            font-weight: 400;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Noto Serif Bengali';
-            src: url('data:font/truetype;charset=utf-8;base64,${boldBase64}') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-        }
-    ` : '';
-
-    return `
-        <style>
-            ${fontFaceRules}
-            .pdf-footer {
-                width: 100%;
-                margin: 0;
-                padding: 0 11mm;
-                box-sizing: border-box;
-                font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', sans-serif !important;
-                font-size: 8pt;
-                line-height: 1;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                color: #64748B;
-                border-top: 0.6px solid #CBD5E1;
-                padding-top: 1.8mm;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-        </style>
-        <div class="pdf-footer">
-            <span style="font-weight: 600;">© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</span>
-            <span style="color: #0066FF; font-weight: 700;">পৃষ্ঠা <span class="pageNumber"></span> / <span class="totalPages"></span></span>
-        </div>
-    `;
 }
 
 async function main() {
@@ -378,14 +452,12 @@ async function main() {
             path: pdfPath,
             format: 'A5',
             printBackground: true,
-            displayHeaderFooter: true,
-            headerTemplate: '<div></div>',
-            footerTemplate: buildFooterTemplate(),
+            displayHeaderFooter: false, // In-Page Native Footer eliminates Puppeteer Skia font distortion
             margin: {
-                top: '10mm',
-                bottom: '12mm',
-                left: '11mm',
-                right: '11mm'
+                top: '0mm',
+                bottom: '0mm',
+                left: '0mm',
+                right: '0mm'
             }
         });
 
