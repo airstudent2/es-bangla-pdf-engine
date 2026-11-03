@@ -34,11 +34,18 @@ function parseQuestionFile(filePath) {
     const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return null;
 
+    const isEnglish = path.basename(filePath).startsWith('english_');
+
     let title = lines[0];
     let subtitle = '';
     let startIdx = 1;
 
-    if (lines.length > 1 && (lines[1].toLowerCase().startsWith('mcq') || lines[1].includes('দ্বাদশ শ্রেণি'))) {
+    if (lines.length > 1 && (
+        lines[1].toLowerCase().startsWith('mcq') ||
+        lines[1].includes('দ্বাদশ শ্রেণি') ||
+        lines[1].includes('Class 12') ||
+        lines[1].includes('Semester')
+    )) {
         subtitle = lines[1];
         startIdx = 2;
     }
@@ -51,7 +58,8 @@ function parseQuestionFile(filePath) {
     const optBRegex = /^[\(\[]?(?:খ|B)[\)\]\.]\s*(.*)/;
     const optCRegex = /^[\(\[]?(?:গ|C)[\)\]\.]\s*(.*)/;
     const optDRegex = /^[\(\[]?(?:ঘ|D)[\)\]\.]\s*(.*)/;
-    const ansRegex = /^(?:[✓✔]\s*)?(?:সঠিক\s*)?উত্তর\s*[:\-\—\s]+\s*(.*)/;
+    const ansRegex = /^(?:[✓✔]\s*)?(?:সঠিক\s*)?(?:উত্তর|Answer)\s*[:\-\—\s]+\s*(.*)/i;
+    const expRegex = /^(?:ব্যাখ্যা|Explanation)\s*[:\-\—\s]+\s*(.*)/i;
 
     for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i];
@@ -68,7 +76,8 @@ function parseQuestionFile(filePath) {
                 optionB: '',
                 optionC: '',
                 optionD: '',
-                answer: ''
+                answer: '',
+                explanation: ''
             };
             continue;
         }
@@ -80,6 +89,7 @@ function parseQuestionFile(filePath) {
         const cMatch = line.match(optCRegex);
         const dMatch = line.match(optDRegex);
         const ansMatch = line.match(ansRegex);
+        const expMatch = line.match(expRegex);
 
         if (aMatch) {
             currentQ.optionA = aMatch[1].trim();
@@ -91,11 +101,18 @@ function parseQuestionFile(filePath) {
             currentQ.optionD = dMatch[1].trim();
         } else if (ansMatch) {
             let ansText = ansMatch[1].trim();
-            ansText = ansText.replace(/[\(\[]?A[\)\]\.]/g, '(ক)')
-                             .replace(/[\(\[]?B[\)\]\.]/g, '(খ)')
-                             .replace(/[\(\[]?C[\)\]\.]/g, '(গ)')
-                             .replace(/[\(\[]?D[\)\]\.]/g, '(ঘ)');
+            if (!isEnglish) {
+                ansText = ansText.replace(/[\(\[]?A[\)\]\.]/g, '(ক)')
+                                 .replace(/[\(\[]?B[\)\]\.]/g, '(খ)')
+                                 .replace(/[\(\[]?C[\)\]\.]/g, '(গ)')
+                                 .replace(/[\(\[]?D[\)\]\.]/g, '(ঘ)');
+            }
             currentQ.answer = ansText;
+        } else if (expMatch) {
+            let exp = expMatch[1].trim();
+            if (!exp.startsWith('(')) exp = '(' + exp;
+            if (!exp.endsWith(')')) exp = exp + ')';
+            currentQ.explanation = exp;
         } else if (!currentQ.optionA) {
             currentQ.question += ' ' + line;
         }
@@ -105,10 +122,11 @@ function parseQuestionFile(filePath) {
         questionBlocks.push(currentQ);
     }
 
-    return { title, subtitle, questions: questionBlocks };
+    return { title, subtitle, isEnglish, questions: questionBlocks };
 }
 
 function generateHtml(data) {
+    const isEnglish = !!data.isEnglish;
     const fontFaceRules = regularBase64 && boldBase64 ? `
         @font-face {
             font-family: 'Noto Serif Bengali';
@@ -124,27 +142,36 @@ function generateHtml(data) {
         }
     ` : '';
 
-    const questionsHtml = data.questions.map(q => `
+    const questionsHtml = data.questions.map(q => {
+        const optALabel = isEnglish ? '(A)' : '(ক)';
+        const optBLabel = isEnglish ? '(B)' : '(খ)';
+        const optCLabel = isEnglish ? '(C)' : '(গ)';
+        const optDLabel = isEnglish ? '(D)' : '(ঘ)';
+        const ansPrefix = isEnglish ? 'Answer: ' : 'উত্তর:- ';
+
+        return `
         <div class="q-card">
             <div class="q-title"><span class="q-num">${q.number}.</span> ${q.question}</div>
             <div class="options-grid">
-                <div class="option-item"><span class="opt-label">(ক)</span> ${q.optionA}</div>
-                <div class="option-item"><span class="opt-label">(খ)</span> ${q.optionB}</div>
-                <div class="option-item"><span class="opt-label">(গ)</span> ${q.optionC}</div>
-                <div class="option-item"><span class="opt-label">(ঘ)</span> ${q.optionD}</div>
+                <div class="option-item"><span class="opt-label">${optALabel}</span> ${q.optionA}</div>
+                <div class="option-item"><span class="opt-label">${optBLabel}</span> ${q.optionB}</div>
+                <div class="option-item"><span class="opt-label">${optCLabel}</span> ${q.optionC}</div>
+                <div class="option-item"><span class="opt-label">${optDLabel}</span> ${q.optionD}</div>
             </div>
-            <div class="q-answer">উত্তর:- ${q.answer}</div>
+            <div class="q-answer">${ansPrefix}${q.answer}</div>
+            ${q.explanation ? `<div class="q-explanation">${q.explanation}</div>` : ''}
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     return `<!DOCTYPE html>
-<html lang="bn">
+<html lang="${isEnglish ? 'en' : 'bn'}">
 <head>
     <meta charset="UTF-8">
     <title>${data.title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         ${fontFaceRules}
 
@@ -163,7 +190,7 @@ function generateHtml(data) {
             margin: 0;
             padding: 0;
             background-color: #FFFFFF;
-            font-family: 'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', serif;
+            font-family: ${isEnglish ? "'Noto Serif', 'Noto Serif Bengali', serif" : "'Noto Serif Bengali', 'Noto Sans Bengali', 'Lohit Bengali', serif"};
             color: #111827;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -320,6 +347,16 @@ function generateHtml(data) {
             margin-top: 2px;
             padding-left: 1px;
             line-height: 1.32;
+        }
+
+        .q-explanation {
+            font-family: 'Noto Serif Bengali', serif;
+            font-size: 9.3pt;
+            font-weight: 400; /* Regular Bengali font per user rule */
+            color: #475569; /* Slate grey */
+            line-height: 1.35;
+            margin-top: 2px;
+            padding-left: 1px;
         }
 
         /* Measurement stage styles */
