@@ -147,6 +147,13 @@ function generateHtml(data) {
 
     const pagesHtml = pages.map((pageQuestions, pageIdx) => {
         const isFirstPage = pageIdx === 0;
+        const isLastPage = pageIdx === totalPages - 1;
+
+        // User Rule: Watermark not on every page; sparse (every 3-4 pages, or only Page 1 for short docs)
+        const showWatermark = (pageIdx === 0) || (totalPages > 4 && pageIdx % 4 === 0);
+
+        // User Rule: "ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে" notice only 1-2 times across entire PDF (e.g. Page 1 only)
+        const showNotice = (pageIdx === 0) || (totalPages > 5 && isLastPage);
 
         const questionsHtml = pageQuestions.map(q => `
             <div class="q-card">
@@ -163,8 +170,8 @@ function generateHtml(data) {
 
         return `
             <div class="pdf-page">
-                <!-- Background Aesthetic Watermark -->
-                <div class="watermark">Es Bangla</div>
+                <!-- Sparse Aesthetic Watermark (Only shown occasionally per user instruction) -->
+                ${showWatermark ? `<div class="watermark">Es Bangla</div>` : ''}
 
                 <!-- Page Content Area -->
                 <div class="page-body">
@@ -180,9 +187,9 @@ function generateHtml(data) {
                     </div>
                 </div>
 
-                <!-- Native In-Page Footer with Full Bengali Typography -->
+                <!-- Clean Footer Bar (NO DIVIDER LINE, Notice only 1-2 times, Clean page number) -->
                 <div class="pdf-footer">
-                    <div class="pdf-footer-left">© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+                    <div class="pdf-footer-left">${showNotice ? '© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে' : ''}</div>
                     <div class="pdf-footer-right">পৃষ্ঠা ${toBengaliNumber(pageIdx + 1)} / ${toBengaliNumber(totalPages)}</div>
                 </div>
             </div>
@@ -225,7 +232,7 @@ function generateHtml(data) {
         .pdf-page {
             width: 148mm;
             height: 210mm;
-            padding: 12mm 14mm 9mm 14mm; /* 14mm left/right safe margin prevents any text cutoff */
+            padding: 12mm 14mm 9mm 14mm; /* 14mm safe margins prevent any clipping */
             position: relative;
             display: flex;
             flex-direction: column;
@@ -241,7 +248,7 @@ function generateHtml(data) {
             break-after: avoid;
         }
 
-        /* Diagonal Aesthetic Watermark - Perfectly Centered in Page Container */
+        /* Diagonal Aesthetic Watermark - Sparse & Non-Intrusive */
         .watermark {
             position: absolute;
             top: 50%;
@@ -250,7 +257,7 @@ function generateHtml(data) {
             font-family: 'Noto Serif Bengali', serif;
             font-size: 50pt;
             font-weight: 700;
-            color: rgba(0, 102, 255, 0.055); /* Clearly visible yet completely non-intrusive */
+            color: rgba(0, 102, 255, 0.055);
             letter-spacing: 3px;
             pointer-events: none;
             z-index: 0;
@@ -360,13 +367,13 @@ function generateHtml(data) {
             line-height: 1.35;
         }
 
-        /* Native Clean Footer Bar */
+        /* Native Clean Footer Bar - NO BORDER LINE */
         .pdf-footer {
             position: relative;
             z-index: 1;
             margin-top: auto;
-            padding-top: 2.5mm;
-            border-top: 0.8px solid #CBD5E1;
+            padding-top: 2mm;
+            border-top: none; /* Completely removed per user instruction */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -385,6 +392,7 @@ function generateHtml(data) {
             font-size: 8.5pt;
             font-weight: 700;
             color: #0066FF;
+            margin-left: auto;
         }
 
         @media screen {
@@ -452,7 +460,7 @@ async function main() {
             path: pdfPath,
             format: 'A5',
             printBackground: true,
-            displayHeaderFooter: false, // In-Page Native Footer eliminates Puppeteer Skia font distortion
+            displayHeaderFooter: false,
             margin: {
                 top: '0mm',
                 bottom: '0mm',
