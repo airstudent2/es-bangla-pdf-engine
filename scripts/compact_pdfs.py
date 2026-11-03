@@ -31,7 +31,7 @@ def compact_single_pdf(in_path, out_path):
     ref_pattern = re.compile(rb'(\d+)\s+0\s+R')
     reachable = set()
     queue = [root_id]
-    page_contents = set()
+    stream_objs = set()
 
     while queue:
         curr = queue.pop(0)
@@ -42,35 +42,35 @@ def compact_single_pdf(in_path, out_path):
         if b'/Type /Page' in body or b'/Type/Page' in body:
             body = re.sub(rb'/StructParents\s+\d+', rb'', body)
             objects[curr] = body
-            c_m = re.search(rb'/Contents\s+(\d+)\s+0\s+R', body)
-            if c_m:
-                page_contents.add(int(c_m.group(1)))
-            c_arr_m = re.search(rb'/Contents\s*\[(.*?)\]', body)
-            if c_arr_m:
-                for c_sub in ref_pattern.finditer(c_arr_m.group(1)):
-                    page_contents.add(int(c_sub.group(1)))
+
+        if b'stream' in body:
+            stream_objs.add(curr)
 
         for ref_m in ref_pattern.finditer(body):
             ref_id = int(ref_m.group(1))
             if ref_id not in reachable and ref_id in objects:
                 queue.append(ref_id)
 
-    # Strip orphaned accessibility BDC/EMC markers from page content streams
-    for cid in page_contents:
-        if cid in objects:
-            body = objects[cid]
-            m = re.search(rb'^(<<.*?>>\s*stream\r?\n)(.*?)(\r?\nendstream)$', body, re.DOTALL)
-            if m:
-                hdr = m.group(1)
-                raw = m.group(2)
-                ftr = m.group(3)
+    # Process all reachable streams (strip BDC/EMC and reduce excess float precision)
+    for sid in stream_objs:
+        body = objects[sid]
+        m = re.search(rb'^(<<.*?>>\s*stream\r?\n)(.*?)(\r?\nendstream)$', body, re.DOTALL)
+        if m:
+            hdr = m.group(1)
+            raw = m.group(2)
+            ftr = m.group(3)
+            # Only process if NOT a font binary file
+            if b'/Length1' not in hdr:
                 try:
                     decomp = zlib.decompress(raw)
-                    stripped = re.sub(rb'/[A-Za-z0-9]+\s*<<.*?>>\s*BDC\s*', rb'', decomp)
-                    stripped = re.sub(rb'\s*EMC\s*', rb' ', stripped)
-                    recomp = zlib.compress(stripped, level=9)
+                    # 1. Strip orphaned BDC and EMC markers
+                    decomp = re.sub(rb'/[A-Za-z0-9]+\s*<<.*?>>\s*BDC\s*', rb'', decomp)
+                    decomp = re.sub(rb'\s*EMC\s*', rb' ', decomp)
+                    # 2. Reduce excessive float decimals beyond 2 places (0.01 pt = 0.0035 mm)
+                    decomp = re.sub(rb'(\b-?\d+\.\d{2})\d{2,}\b', rb'\1', decomp)
+                    recomp = zlib.compress(decomp, level=9)
                     hdr = re.sub(rb'/Length\s+\d+', f'/Length {len(recomp)}'.encode('ascii'), hdr)
-                    objects[cid] = hdr + recomp + ftr
+                    objects[sid] = hdr + recomp + ftr
                 except:
                     pass
 
