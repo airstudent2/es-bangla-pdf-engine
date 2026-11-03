@@ -121,11 +121,52 @@ function parseQuestionFile(filePath) {
         questionBlocks.push(currentQ);
     }
 
-    return { title, isEnglish, questions: questionBlocks };
+    return { title, isEnglish, isPyq: false, questions: questionBlocks };
+}
+
+function parsePyqJson(filePath) {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    const isEnglish = path.basename(filePath).includes('english');
+
+    const questions = data.questions.map(q => {
+        let optA = '', optB = '', optC = '', optD = '';
+        if (Array.isArray(q.options) && q.options.length === 4) {
+            optA = q.options[0].replace(/^[\(\[]?[A-Dক-ঘ][\)\]\.]\s*/, '').trim();
+            optB = q.options[1].replace(/^[\(\[]?[A-Dক-ঘ][\)\]\.]\s*/, '').trim();
+            optC = q.options[2].replace(/^[\(\[]?[A-Dক-ঘ][\)\]\.]\s*/, '').trim();
+            optD = q.options[3].replace(/^[\(\[]?[A-Dক-ঘ][\)\]\.]\s*/, '').trim();
+        }
+        return {
+            number: q.num || q.number,
+            unit: q.unit || '',
+            question: q.text,
+            optionA: optA,
+            optionB: optB,
+            optionC: optC,
+            optionD: optD,
+            answer: q.answer || '',
+            explanation: q.explanation || ''
+        };
+    });
+
+    return {
+        title: data.title,
+        isEnglish: isEnglish,
+        isPyq: true,
+        series: data.series || '',
+        subject_code: data.subject_code || '',
+        booklet_no: data.booklet_no || '',
+        code_no: data.code_no || '',
+        total_marks: data.total_marks || 40,
+        time: data.time || '1 Hour 30 Minutes',
+        questions: questions
+    };
 }
 
 function generateHtml(data) {
     const isEnglish = !!data.isEnglish;
+    const isPyq = !!data.isPyq;
     const fontFaceRules = regularBase64 && boldBase64 ? `
         @font-face {
             font-family: 'Noto Serif Bengali';
@@ -142,16 +183,21 @@ function generateHtml(data) {
     ` : '';
 
     const questionsHtml = data.questions.map(q => {
-        const optALabel = isEnglish ? '(A)' : '(ক)';
-        const optBLabel = isEnglish ? '(B)' : '(খ)';
-        const optCLabel = isEnglish ? '(C)' : '(গ)';
-        const optDLabel = isEnglish ? '(D)' : '(ঘ)';
-        const ansPrefix = isEnglish ? 'Answer: ' : 'উত্তর:- ';
+        const optALabel = isEnglish || isPyq ? '(A)' : '(ক)';
+        const optBLabel = isEnglish || isPyq ? '(B)' : '(খ)';
+        const optCLabel = isEnglish || isPyq ? '(C)' : '(গ)';
+        const optDLabel = isEnglish || isPyq ? '(D)' : '(ঘ)';
+        const ansPrefix = isEnglish ? 'Answer: ' : (isPyq ? 'সঠিক উত্তর: ' : 'উত্তর:- ');
+
+        const formattedQ = (q.question || '').split('\n').map(l => l.trim()).filter(Boolean).join('<br>');
+        const isLongOption = [q.optionA, q.optionB, q.optionC, q.optionD].some(o => (o || '').length > 28);
+        const gridClass = isLongOption ? 'options-grid single-col' : 'options-grid';
 
         return `
         <div class="q-card">
-            <div class="q-title"><span class="q-num">${q.number}.</span> ${q.question}</div>
-            <div class="options-grid">
+            ${q.unit ? `<div class="unit-tag">${q.unit}</div>` : ''}
+            <div class="q-title"><span class="q-num">${q.number}.</span> ${formattedQ}</div>
+            <div class="${gridClass}">
                 <div class="option-item"><span class="opt-label">${optALabel}</span> ${q.optionA}</div>
                 <div class="option-item"><span class="opt-label">${optBLabel}</span> ${q.optionB}</div>
                 <div class="option-item"><span class="opt-label">${optCLabel}</span> ${q.optionC}</div>
@@ -162,6 +208,29 @@ function generateHtml(data) {
         </div>
         `;
     }).join('');
+
+    const headerHtml = isPyq ? `
+        <div id="raw-header" class="header-container pyq-header">
+            <div class="badge-row">
+                <span class="sub-badge">WBCHSE Class 12 • Semester-III 2027</span>
+                <span class="status-badge">অফিসিয়াল প্রশ্নপত্র ও নির্ভুল সমাধান</span>
+            </div>
+            <h1 class="main-title">${data.title}</h1>
+            <div class="meta-row">
+                ${data.series ? `<span>সিরিজ: <strong>Series ${data.series}</strong></span> • ` : ''}
+                ${data.subject_code ? `<span>বিষয় কোড: <strong>${data.subject_code}</strong></span> • ` : ''}
+                ${data.booklet_no ? `<span>বুকলেট নং: <strong>${data.booklet_no}</strong></span> • ` : ''}
+                <span>পূর্ণমান: <strong>${data.total_marks || 40}</strong></span> • 
+                <span>সময়: <strong>${data.time || '1 Hour 30 Minutes'}</strong></span>
+            </div>
+            <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের পড়াশোনার সুবিধার্থে প্রস্তুত</div>
+        </div>
+    ` : `
+        <div id="raw-header" class="header-container">
+            <h1 class="main-title">${data.title}</h1>
+            <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+        </div>
+    `;
 
     return `<!DOCTYPE html>
 <html lang="${isEnglish ? 'en' : 'bn'}">
@@ -195,12 +264,11 @@ function generateHtml(data) {
             print-color-adjust: exact;
         }
 
-        /* Dedicated A5 Page Container */
         .pdf-page {
             width: 148mm;
             height: 210mm;
             box-sizing: border-box;
-            padding: 10mm 13mm; /* 13mm safe left/right margin, 10mm top/bottom */
+            padding: 10mm 13mm;
             position: relative;
             page-break-after: always;
             break-after: page;
@@ -215,7 +283,6 @@ function generateHtml(data) {
             break-after: avoid;
         }
 
-        /* Diagonal Aesthetic Watermark - on EVERY page */
         .watermark {
             position: absolute;
             top: 50%;
@@ -224,7 +291,7 @@ function generateHtml(data) {
             font-family: 'Noto Serif Bengali', serif;
             font-size: 52pt;
             font-weight: 700;
-            color: rgba(0, 102, 255, 0.055); /* Elegant, subtle 5.5% opacity */
+            color: rgba(0, 102, 255, 0.055);
             letter-spacing: 3px;
             pointer-events: none;
             z-index: 0;
@@ -241,8 +308,37 @@ function generateHtml(data) {
             z-index: 1;
         }
 
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .sub-badge {
+            display: inline-block;
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+            border: 1px solid #BFDBFE;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 7.5pt;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: #ECFDF5;
+            color: #059669;
+            border: 1px solid #A7F3D0;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 7.5pt;
+            font-weight: 700;
+        }
+
         .main-title {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: 700;
             color: #0066FF;
             line-height: 1.32;
@@ -252,6 +348,16 @@ function generateHtml(data) {
             margin-bottom: 3px;
         }
 
+        .meta-row {
+            font-size: 8.5pt;
+            color: #475569;
+            margin-top: 3px;
+            margin-bottom: 2px;
+        }
+
+        .meta-row strong {
+            color: #0F172A;
+        }
 
         .notice-bar {
             font-size: 8pt;
@@ -262,18 +368,16 @@ function generateHtml(data) {
             margin-top: 4px;
         }
 
-        /* Flex container that naturally spans the full page height */
         .page-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Fills the page completely from top to bottom */
+            justify-content: space-between;
             position: relative;
             z-index: 1;
             min-height: 0;
         }
 
-        /* Last page does not stretch unnaturally if only 1-2 questions remain */
         .pdf-page.last-page .page-content {
             justify-content: flex-start;
             gap: 12px;
@@ -289,10 +393,18 @@ function generateHtml(data) {
             padding-bottom: 0;
         }
 
+        .unit-tag {
+            font-size: 8pt;
+            font-weight: 700;
+            color: #2563EB;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
         .q-title {
             font-size: 10.8pt;
-            font-weight: 400; /* Regular per user rule */
-            color: #111827; /* Jet Black */
+            font-weight: 400;
+            color: #111827;
             line-height: 1.4;
             margin-bottom: 3px;
         }
@@ -312,10 +424,15 @@ function generateHtml(data) {
             padding-left: 1px;
         }
 
+        .options-grid.single-col {
+            grid-template-columns: 1fr;
+            row-gap: 3px;
+        }
+
         .option-item {
             font-size: 9.8pt;
-            font-weight: 400; /* Regular per user rule */
-            color: #1F2937; /* Jet Black */
+            font-weight: 400;
+            color: #1F2937;
             line-height: 1.35;
         }
 
@@ -327,8 +444,8 @@ function generateHtml(data) {
 
         .q-answer {
             font-size: 10.2pt;
-            font-weight: 700; /* Bold per user rule */
-            color: #0066FF; /* Royal Blue */
+            font-weight: 700;
+            color: #0066FF;
             margin-top: 2px;
             padding-left: 1px;
             line-height: 1.32;
@@ -337,16 +454,15 @@ function generateHtml(data) {
         .q-explanation {
             font-family: 'Noto Serif Bengali', serif;
             font-size: 9.3pt;
-            font-weight: 400; /* Regular Bengali font per user rule */
-            color: #475569; /* Slate grey */
+            font-weight: 400;
+            color: #475569;
             line-height: 1.35;
             margin-top: 2px;
             padding-left: 1px;
         }
 
-        /* Measurement stage styles */
         #measure-container {
-            width: 122mm; /* Exactly 148mm - 26mm padding */
+            width: 122mm;
             margin: 0 auto;
         }
 
@@ -368,29 +484,41 @@ function generateHtml(data) {
 </head>
 <body>
     <div id="measure-container">
-        <div id="raw-header" class="header-container">
-            <h1 class="main-title">${data.title}</h1>
-            <div class="notice-bar">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
-        </div>
-
+        ${headerHtml}
         <div id="raw-questions">
             ${questionsHtml}
         </div>
     </div>
-
     <div id="paged-output"></div>
 </body>
 </html>`;
 }
 
 async function main() {
-    const files = fs.readdirSync(QUESTIONS_DIR).filter(f => f.endsWith('.txt'));
-    console.log(`Found ${files.length} question files to process.`);
+    const txtFiles = fs.readdirSync(QUESTIONS_DIR).filter(f => f.endsWith('.txt'));
+    const jsonFiles = fs.readdirSync(QUESTIONS_DIR).filter(f => f.startsWith('pyq_') && f.endsWith('.json'));
 
-    if (files.length === 0) {
-        console.log('No txt files in questions/ directory.');
-        return;
+    const allTasks = [];
+
+    // Add TXT files
+    for (const f of txtFiles) {
+        allTasks.push({
+            type: 'txt',
+            filePath: path.join(QUESTIONS_DIR, f),
+            baseName: path.basename(f, '.txt')
+        });
     }
+
+    // Add PYQ JSON files
+    for (const f of jsonFiles) {
+        allTasks.push({
+            type: 'json',
+            filePath: path.join(QUESTIONS_DIR, f),
+            baseName: path.basename(f, '.json').replace('_extracted', '')
+        });
+    }
+
+    console.log(`Found ${allTasks.length} tasks to process (${txtFiles.length} notes + ${jsonFiles.length} PYQs).`);
 
     const browser = await puppeteer.launch({
         headless: 'new',
@@ -402,25 +530,27 @@ async function main() {
         ]
     });
 
-    for (const file of files) {
-        const fullPath = path.join(QUESTIONS_DIR, file);
-        const data = parseQuestionFile(fullPath);
+    for (const task of allTasks) {
+        let data = null;
+        if (task.type === 'txt') {
+            data = parseQuestionFile(task.filePath);
+        } else {
+            data = parsePyqJson(task.filePath);
+        }
+
         if (!data || data.questions.length === 0) {
-            console.log(`Skipping ${file} (no questions parsed).`);
+            console.log(`Skipping ${task.baseName} (no questions).`);
             continue;
         }
 
-        console.log(`Parsed ${data.questions.length} questions from ${file}`);
+        console.log(`Processing ${task.baseName} (${data.questions.length} questions)...`);
 
         const htmlContent = generateHtml(data);
-        const baseName = path.basename(file, '.txt');
         const page = await browser.newPage();
 
-        // Load the HTML and wait for fonts
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         await page.evaluateHandle('document.fonts.ready');
 
-        // Execute dynamic optimal page distribution
         const stats = await page.evaluate(() => {
             const cal = document.createElement('div');
             cal.style.height = '1mm';
@@ -428,21 +558,16 @@ async function main() {
             const pxPerMm = cal.getBoundingClientRect().height;
             cal.remove();
 
-            // Printable area for A5 (210mm x 148mm) with 10mm top/bottom padding: 190mm
             const printableHeightPx = 190 * pxPerMm;
-
             const headerEl = document.getElementById('raw-header');
             const headerHeightPx = headerEl ? headerEl.offsetHeight : 0;
-            // Page 1 available height for questions (subtracting header and small margin)
             const page1TargetPx = printableHeightPx - headerHeightPx - (4 * pxPerMm);
 
             const rawCards = Array.from(document.querySelectorAll('#raw-questions .q-card'));
-
-            // Greedy optimal packing
             const pages = [];
             let curPage = [];
             let curH = 0;
-            const minGap = 8; // min gap in px
+            const minGap = 8;
 
             for (let i = 0; i < rawCards.length; i++) {
                 const card = rawCards[i];
@@ -466,11 +591,8 @@ async function main() {
                     }
                 }
             }
-            if (curPage.length > 0) {
-                pages.push(curPage);
-            }
+            if (curPage.length > 0) pages.push(curPage);
 
-            // Build final paged DOM
             const pagedOutput = document.getElementById('paged-output');
             pagedOutput.innerHTML = '';
 
@@ -481,13 +603,11 @@ async function main() {
                 const pageDiv = document.createElement('div');
                 pageDiv.className = 'pdf-page' + (isLast ? ' last-page' : '');
 
-                // Watermark on every page
                 const wm = document.createElement('div');
                 wm.className = 'watermark';
                 wm.textContent = 'Es Bangla';
                 pageDiv.appendChild(wm);
 
-                // Header on page 1 only
                 if (isFirst && headerEl) {
                     pageDiv.appendChild(headerEl.cloneNode(true));
                 }
@@ -507,24 +627,16 @@ async function main() {
                 pagedOutput.appendChild(pageDiv);
             });
 
-            // Remove measurement container
             document.getElementById('measure-container').remove();
-
-            return {
-                totalPages: pages.length,
-                counts: pages.map(p => p.length)
-            };
+            return { totalPages: pages.length, counts: pages.map(p => p.length) };
         });
 
-        console.log(`Packed ${data.questions.length} questions into ${stats.totalPages} pages. First 10 page counts:`, stats.counts.slice(0, 10));
+        console.log(`Packed ${data.questions.length} questions into ${stats.totalPages} pages.`);
 
-        // Save final paged HTML preview
         const finalHtml = await page.content();
-        const htmlPath = path.join(HTML_DIR, `${baseName}.html`);
-        fs.writeFileSync(htmlPath, finalHtml, 'utf8');
+        fs.writeFileSync(path.join(HTML_DIR, `${task.baseName}.html`), finalHtml, 'utf8');
 
-        // Generate PDF with exact A5 dimensions and 0 margin (since padding is in .pdf-page)
-        const pdfPath = path.join(OUTPUT_DIR, `${baseName}.pdf`);
+        const pdfPath = path.join(OUTPUT_DIR, `${task.baseName}.pdf`);
         await page.pdf({
             path: pdfPath,
             format: 'A5',
@@ -532,15 +644,10 @@ async function main() {
             displayHeaderFooter: false,
             preferCSSPageSize: true,
             tagged: false,
-            margin: {
-                top: '0mm',
-                bottom: '0mm',
-                left: '0mm',
-                right: '0mm'
-            }
+            margin: { top: '0mm', bottom: '0mm', left: '0mm', right: '0mm' }
         });
 
-        console.log(`Generated PDF: ${pdfPath}`);
+        console.log(`Generated: ${pdfPath}`);
         await page.close();
     }
 
@@ -552,4 +659,3 @@ main().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);
 });
-

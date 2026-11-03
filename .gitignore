@@ -1,0 +1,9 @@
+node_modules/
+official_pyq_*.pdf
+extracted_pages/
+extracted_pages_*/
+*_article_text.txt
+*_web_content.html
+*_page.html
+bengali_step*.txt
+education_extracted_raw.txt

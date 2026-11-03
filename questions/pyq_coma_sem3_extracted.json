@@ -1,0 +1,395 @@
+{
+  "title": "উচ্চমাধ্যমিক ৩য় সেমিস্টার মডার্ন কম্পিউটার অ্যাপ্লিকেশন প্রশ্নপত্র (WBCHSE Question Paper with Solutions)",
+  "series": "D",
+  "subject_code": "18",
+  "booklet_no": "COMA.18.D-6001",
+  "total_marks": 35,
+  "time": "1 Hour 30 Minutes",
+  "questions": [
+    {
+      "num": 1,
+      "text": "স্তম্ভ-I-এর সাথে স্তম্ভ-II মেলাও ও সঠিক বিকল্পটি চয়ন করো :\nস্তম্ভ-I:\n(i) Nested loop\n(ii) For loop\n(iii) While loop\n(iv) Break\nস্তম্ভ-II:\nP. Indefinite loop\nQ. Definite loop\nR. Loop-এর ভিতরে আরেকটি loop\nS. Termination of loop",
+      "options": [
+        "(A) (i) → P, (ii) → Q, (iii) → R, (iv) → S",
+        "(B) (i) → P, (ii) → R, (iii) → Q, (iv) → S",
+        "(C) (i) → Q, (ii) → P, (iii) → R, (iv) → S",
+        "(D) (i) → R, (ii) → Q, (iii) → P, (iv) → S"
+      ],
+      "answer": "(D) (i) → R, (ii) → Q, (iii) → P, (iv) → S"
+    },
+    {
+      "num": 2,
+      "text": "নিম্নলিখিত Python code টির output কী হবে ?\n\ntext = \"Python Program\"\nprint(text[-7:])",
+      "options": [
+        "(A) Program",
+        "(B) Index error",
+        "(C) Python",
+        "(D) Python Program"
+      ],
+      "answer": "(A) Program"
+    },
+    {
+      "num": 3,
+      "text": "Python-এ split() ............ return করে।",
+      "options": [
+        "(A) List",
+        "(B) Tuple",
+        "(C) Set",
+        "(D) Dictionary"
+      ],
+      "answer": "(A) List"
+    },
+    {
+      "num": 4,
+      "text": "স্তম্ভ-I-এর সাথে স্তম্ভ-II মেলাও এবং সঠিক বিকল্পটি চয়ন করো :\nস্তম্ভ-I:\n(i) strip ( )\n(ii) replace ( )\n(iii) startswith ( )\n(iv) endswith ( )\nস্তম্ভ-II:\nP. String-এর একটি নির্দিষ্ট অংশকে অন্য কোনো অংশ দিয়ে প্রতিস্থাপিত করে\nQ. String-টি একটি নির্দিষ্ট substring দিয়ে শুরু কিনা যাচাই করে\nR. String-টি একটি নির্দিষ্ট substring দিয়ে শেষ কিনা যাচাই করে\nS. String-এর শুরু ও শেষে থাকা ফাঁকা জায়গাগুলি সরিয়ে দেয়",
+      "options": [
+        "(A) (i) → P, (ii) → S, (iii) → Q, (iv) → R",
+        "(B) (i) → S, (ii) → P, (iii) → R, (iv) → Q",
+        "(C) (i) → P, (ii) → S, (iii) → R, (iv) → Q",
+        "(D) (i) → S, (ii) → P, (iii) → Q, (iv) → R"
+      ],
+      "answer": "(D) (i) → S, (ii) → P, (iii) → Q, (iv) → R"
+    },
+    {
+      "num": 5,
+      "text": "Assertion (A) : Python-এ একটি single character-এর জন্য আলাদা কোনো data type নেই।\nReason (R) : Python-এ individual character গুলিকে string-এর length 1 হিসাবে উপস্থাপন করা হয়।\n\nউপরিউক্ত Assertion (A) ও Reason (R) পড়ে সঠিক বিকল্পটি চয়ন করো :",
+      "options": [
+        "(A) A এবং R উভয়ই সত্য এবং R, A-এর সঠিক ব্যাখ্যা",
+        "(B) A এবং R উভয়ই সত্য, কিন্তু R, A-এর সঠিক ব্যাখ্যা নয়",
+        "(C) A সত্য, কিন্তু R মিথ্যা",
+        "(D) A মিথ্যা, কিন্তু R সত্য"
+      ],
+      "answer": "(A) A এবং R উভয়ই সত্য এবং R, A-এর সঠিক ব্যাখ্যা"
+    },
+    {
+      "num": 6,
+      "text": "নিম্নলিখিত Python code টির output কী হবে ?\n\nimport statistics\nprint(statistics.mean([2, 3, 6, 7, 8]))",
+      "options": [
+        "(A) 6",
+        "(B) 5.2",
+        "(C) 26",
+        "(D) 5.0"
+      ],
+      "answer": "(B) 5.2"
+    },
+    {
+      "num": 7,
+      "text": "............ function-এর মাধ্যমে most frequent data-কে নির্ণয় করা যায়।",
+      "options": [
+        "(A) mean ( )",
+        "(B) median ( )",
+        "(C) mode ( )",
+        "(D) frequency ( )"
+      ],
+      "answer": "(C) mode ( )"
+    },
+    {
+      "num": 8,
+      "text": "নিম্নলিখিত Python code টির output কী হবে ?\n\nx = 5\ndef exam():\n    global x\n    x = 8\nexam()\nprint(x)",
+      "options": [
+        "(A) 8 8",
+        "(B) 5",
+        "(C) Error",
+        "(D) 8"
+      ],
+      "answer": "(D) 8"
+    },
+    {
+      "num": 9,
+      "text": "Assertion (A) : একটি function-এ required parameter এবং default parameter উভয়ই থাকতে পারে।\nReason (R) : Function definition-এ default parameter-এর আগে required parameter লিখতে হয়।\n\nউপরিউক্ত Assertion (A) ও Reason (R) পড়ে সঠিক বিকল্পটি চয়ন করো :",
+      "options": [
+        "(A) A এবং R উভয়ই সঠিক এবং R, A-এর সঠিক ব্যাখ্যা",
+        "(B) A এবং R উভয়ই সঠিক কিন্তু R, A-এর সঠিক ব্যাখ্যা নয়",
+        "(C) A সত্য, কিন্তু R মিথ্যা",
+        "(D) A মিথ্যা, কিন্তু R সত্য"
+      ],
+      "answer": "(B) A এবং R উভয়ই সঠিক কিন্তু R, A-এর সঠিক ব্যাখ্যা নয়"
+    },
+    {
+      "num": 10,
+      "text": "Python-এ কোনো function-কে define করতে কোন্ keyword ব্যবহার করা হয় ?",
+      "options": [
+        "(A) def",
+        "(B) declare",
+        "(C) define",
+        "(D) func"
+      ],
+      "answer": "(A) def"
+    },
+    {
+      "num": 11,
+      "text": "নিম্নলিখিত কোনটি একটি payment gateway নয় ?",
+      "options": [
+        "(A) PayPal",
+        "(B) Razorpay",
+        "(C) Gmail",
+        "(D) CCAvenue"
+      ],
+      "answer": "(C) Gmail"
+    },
+    {
+      "num": 12,
+      "text": "CBDC-এর পূর্ণরূপটি হলো —",
+      "options": [
+        "(A) Commercial Bank Deposit Creation",
+        "(B) Central Bank Deposit Creation",
+        "(C) Central Bank Disbursement Committee",
+        "(D) Central Bank Digital Currency"
+      ],
+      "answer": "(D) Central Bank Digital Currency"
+    },
+    {
+      "num": 13,
+      "text": "নিম্নলিখিত কোনটি একটি Internet Marketing-এর কৌশল নয় ?",
+      "options": [
+        "(A) In-house marketing",
+        "(B) Search engine optimization",
+        "(C) Social media marketing",
+        "(D) Video marketing"
+      ],
+      "answer": "(A) In-house marketing"
+    },
+    {
+      "num": 14,
+      "text": "নিম্নলিখিত কোনটি paperless bill সম্পর্কে সঠিক নয় ?",
+      "options": [
+        "(A) Paper ও printing-এর খরচ নেই",
+        "(B) দ্রুত consumer-কে E-bill প্রেরণ করা যায়",
+        "(C) এটি একটি পরিবেশবান্ধব পদ্ধতি",
+        "(D) Company-কে সরাসরি payment করা যায় না"
+      ],
+      "answer": "(D) Company-কে সরাসরি payment করা যায় না"
+    },
+    {
+      "num": 15,
+      "text": "............ বলতে blog অথবা video-এর মাধ্যমে website-এ বিজ্ঞাপন প্রদর্শনের মাধ্যমে পণ্যের প্রচার করাকে বোঝায়।",
+      "options": [
+        "(A) Influencer marketing",
+        "(B) Affiliate marketing",
+        "(C) Affluent marketing",
+        "(D) Adjustment marketing"
+      ],
+      "answer": "(B) Affiliate marketing"
+    },
+    {
+      "num": 16,
+      "text": "Python-এ code block নির্ধারণ করার জন্য কী ব্যবহার করা হয় ?",
+      "options": [
+        "(A) Braces",
+        "(B) Parentheses",
+        "(C) Indentation",
+        "(D) Semicolon"
+      ],
+      "answer": "(C) Indentation"
+    },
+    {
+      "num": 17,
+      "text": "Python-এ 'else' block কখন execute হয় ?",
+      "options": [
+        "(A) যখন condition টি মিথ্যা হয়",
+        "(B) যখন condition টি সত্য হয়",
+        "(C) যখন loop শেষ হয়",
+        "(D) যখন পুনরায় loop শুরু হয়"
+      ],
+      "answer": "(A) যখন condition টি মিথ্যা হয়"
+    },
+    {
+      "num": 18,
+      "text": "Python-এর নিম্নলিখিত code টি লক্ষ্য করো :\n\na = 5\nwhile a > -1:\n    print(a)\n    a = a - 1\n\nউপরিউক্ত code-এ কতগুলি সংখ্যা print হবে ?",
+      "options": [
+        "(A) 5",
+        "(B) 6",
+        "(C) 0",
+        "(D) 4"
+      ],
+      "answer": "(B) 6"
+    },
+    {
+      "num": 19,
+      "text": "Assertion (A) : range (5) 1 থেকে 5 পর্যন্ত সংখ্যা তৈরী করতে পারে।\nReason (R) : range (n) 0 থেকে শুরু হয় এবং (n - 1)-এ শেষ হয়।\n\nউপরোক্ত Assertion (A) ও Reason (R) পড়ে সঠিক বিকল্পটি চয়ন করো :",
+      "options": [
+        "(A) A এবং R উভয়ই সত্য এবং R, A-এর সঠিক ব্যাখ্যা",
+        "(B) A এবং R উভয়ই সত্য, কিন্তু R, A-এর সঠিক ব্যাখ্যা নয়",
+        "(C) A সত্য, কিন্তু R মিথ্যা",
+        "(D) A মিথ্যা, কিন্তু R সত্য"
+      ],
+      "answer": "(D) A মিথ্যা, কিন্তু R সত্য"
+    },
+    {
+      "num": 20,
+      "text": "নিম্নলিখিত Python code টির output কী হবে ?\n\nfor i in range (3):\n    if i == 1:\n        continue\n    print(i)",
+      "options": [
+        "(A) 0 1 2",
+        "(B) 1 2",
+        "(C) 0 2",
+        "(D) 0 1"
+      ],
+      "answer": "(C) 0 2"
+    },
+    {
+      "num": 21,
+      "text": "Python-এ, নীচের কোনটি একটি বৈধ Variable-এর উদাহরণ ?",
+      "options": [
+        "(A) ab-1",
+        "(B) ab1_@",
+        "(C) ab_1",
+        "(D) 2ab"
+      ],
+      "answer": "(C) ab_1"
+    },
+    {
+      "num": 22,
+      "text": "কোন্ Python collection-কে index দিয়ে access করা যায় না ?",
+      "options": [
+        "(A) Dictionary",
+        "(B) List",
+        "(C) Tuple",
+        "(D) String"
+      ],
+      "answer": "(A) Dictionary"
+    },
+    {
+      "num": 23,
+      "text": "নীচের কোনটি একটি relational operator নয় ?",
+      "options": [
+        "(A) >=",
+        "(B) <=",
+        "(C) !=",
+        "(D) ||"
+      ],
+      "answer": "(D) ||"
+    },
+    {
+      "num": 24,
+      "text": "Python operator precedence-এর তালিকা অনুযায়ী, নীচের কোন্ বিকল্পটি সঠিক ক্রমে সাজানো হয়েছে :\n(i) Unary plus এবং Unary minus\n(ii) Exponentiation\n(iii) Addition এবং subtraction\n(iv) Parentheses",
+      "options": [
+        "(A) (ii) → (iv) → (i) → (iii)",
+        "(B) (ii) → (i) → (iv) → (iii)",
+        "(C) (iv) → (i) → (ii) → (iii)",
+        "(D) (iv) → (ii) → (i) → (iii)"
+      ],
+      "answer": "(D) (iv) → (ii) → (i) → (iii)"
+    },
+    {
+      "num": 25,
+      "text": "x = [5, 7, 10]\nprint(x[7])\n\nউপরিউক্ত Python code-এ ............ দেখা যাবে।",
+      "options": [
+        "(A) Value error",
+        "(B) Index error",
+        "(C) Key error",
+        "(D) Type error"
+      ],
+      "answer": "(B) Index error"
+    },
+    {
+      "num": 26,
+      "text": "Python-এ Math module ব্যবহার করে নিচের code টির output নির্ণয় করো :\n\nimport math\nprint(math.ceil(-12.7))",
+      "options": [
+        "(A) -12",
+        "(B) 12",
+        "(C) -13",
+        "(D) 13"
+      ],
+      "answer": "(A) -12"
+    },
+    {
+      "num": 27,
+      "text": "যদি x = [8, 9, 10, 11, 12, 13, 14]\nprint(x[-1 : 2 : -1])-এর output কী হবে ?",
+      "options": [
+        "(A) [10, 11, 12, 13, 14]",
+        "(B) [14, 13, 12, 11, 10]",
+        "(C) Index error",
+        "(D) [14, 13, 12, 11]"
+      ],
+      "answer": "(D) [14, 13, 12, 11]"
+    },
+    {
+      "num": 28,
+      "text": "নিম্নলিখিত Python code টির output কী হবে ?\n\nlist1 = [1, 2, 3, 4, 5]\nlist1.remove(4)\nprint(list1)",
+      "options": [
+        "(A) [1, 2, 3, 4]",
+        "(B) [1, 2, 3, 5]",
+        "(C) [5]",
+        "(D) [4]"
+      ],
+      "answer": "(B) [1, 2, 3, 5]"
+    },
+    {
+      "num": 29,
+      "text": "Python-এ একটি list-এর শেষ element টি access করতে নীচের কোনটি ব্যবহৃত হয় ?",
+      "options": [
+        "(A) list [0]",
+        "(B) list [last]",
+        "(C) list [-1]",
+        "(D) list [1]"
+      ],
+      "answer": "(C) list [-1]"
+    },
+    {
+      "num": 30,
+      "text": "বিবৃতি I : extend ( ) method একটি list-এর সাথে অন্য list-এর একাধিক element যোগ করে।\nবিবৃতি II : append ( ) method-এর দ্বারা একটি list-এর সাথে অন্য list-এর একাধিক উপাদান যোগ করা যায়।\n\nউপরিউক্ত বিবৃতিদ্বয় পড়ে সঠিক বিকল্পটি চয়ন করো :",
+      "options": [
+        "(A) বিবৃতি I এবং বিবৃতি II উভয়ই সঠিক",
+        "(B) বিবৃতি I সঠিক, কিন্তু বিবৃতি II সঠিক নয়",
+        "(C) বিবৃতি I সঠিক নয়, কিন্তু বিবৃতি II সঠিক",
+        "(D) বিবৃতি I ও বিবৃতি II উভয়ই সঠিক নয়"
+      ],
+      "answer": "(B) বিবৃতি I সঠিক, কিন্তু বিবৃতি II সঠিক নয়"
+    },
+    {
+      "num": 31,
+      "text": "স্তম্ভ-I এবং স্তম্ভ-II মেলাও ও সঠিক বিকল্পটি চয়ন করো :\nস্তম্ভ-I:\n(i) E-commerce\n(ii) বহুজাতিক সংস্থা\n(iii) Cricket match-এর টিকিট\n(iv) Online Payment\nস্তম্ভ-II:\nP. Amazon\nQ. Book My Show\nR. Google Pay\nS. Electronic commerce",
+      "options": [
+        "(A) (i) → P, (ii) → Q, (iii) → S, (iv) → R",
+        "(B) (i) → R, (ii) → S, (iii) → P, (iv) → Q",
+        "(C) (i) → S, (ii) → P, (iii) → Q, (iv) → R",
+        "(D) (i) → S, (ii) → R, (iii) → P, (iv) → Q"
+      ],
+      "answer": "(C) (i) → S, (ii) → P, (iii) → Q, (iv) → R"
+    },
+    {
+      "num": 32,
+      "text": "............ হলো এমন একটি E-commerce model যেখানে ব্যবসায়ীরা সরাসরি consumer-দের কাছে পণ্য বা পরিষেবা বিক্রি করে।",
+      "options": [
+        "(A) B2B",
+        "(B) B2C",
+        "(C) C2C",
+        "(D) C2G"
+      ],
+      "answer": "(B) B2C"
+    },
+    {
+      "num": 33,
+      "text": "B2C model-এর প্রধান ঝুঁকি হলো —",
+      "options": [
+        "(A) জটিল Web technology",
+        "(B) গ্রাহকদের ব্যক্তিগত তথ্য প্রকাশের ঝুঁকি",
+        "(C) অধিক customization",
+        "(D) এগুলির সবকটি"
+      ],
+      "answer": "(B) গ্রাহকদের ব্যক্তিগত তথ্য প্রকাশের ঝুঁকি"
+    },
+    {
+      "num": 34,
+      "text": "বিবৃতি-I : Intranet হলো কোনো সংস্থার অভ্যন্তরীণ network।\nবিবৃতি-II : Intranet-এর সাহায্যে ব্যবসার বিস্তার বিশ্বব্যাপী করা যায়।\n\nউপরিউক্ত বিবৃতিদ্বয় পড়ে সঠিক বিকল্পটি চয়ন করো :",
+      "options": [
+        "(A) বিবৃতি I এবং বিবৃতি II উভয়ই সঠিক",
+        "(B) বিবৃতি I সঠিক নয়, কিন্তু বিবৃতি II সঠিক",
+        "(C) বিবৃতি I সঠিক, কিন্তু বিবৃতি II সঠিক নয়",
+        "(D) বিবৃতি I এবং বিবৃতি II উভয়ই সঠিক নয়"
+      ],
+      "answer": "(C) বিবৃতি I সঠিক, কিন্তু বিবৃতি II সঠিক নয়"
+    },
+    {
+      "num": 35,
+      "text": "............ হলো এক ধরনের contactless payment-এর technology।",
+      "options": [
+        "(A) UPI",
+        "(B) RFID",
+        "(C) ACH",
+        "(D) RTGS"
+      ],
+      "answer": "(B) RFID"
+    }
+  ]
+}
