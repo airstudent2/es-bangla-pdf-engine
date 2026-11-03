@@ -149,10 +149,8 @@ function generateHtml(data) {
         const isFirstPage = pageIdx === 0;
         const isLastPage = pageIdx === totalPages - 1;
 
-        // User Rule: Watermark not on every page; sparse (every 3-4 pages, or only Page 1 for short docs)
-        const showWatermark = (pageIdx === 0) || (totalPages > 4 && pageIdx % 4 === 0);
-
-        // User Rule: "ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে" notice only 1-2 times across entire PDF (e.g. Page 1 only)
+        // User Rule: Watermark in background on EVERY page
+        // User Rule: Footer notice only 1-2 times (Page 1, or Page 1 and last page if > 5 pages)
         const showNotice = (pageIdx === 0) || (totalPages > 5 && isLastPage);
 
         const questionsHtml = pageQuestions.map(q => `
@@ -170,8 +168,8 @@ function generateHtml(data) {
 
         return `
             <div class="pdf-page">
-                <!-- Sparse Aesthetic Watermark (Only shown occasionally per user instruction) -->
-                ${showWatermark ? `<div class="watermark">Es Bangla</div>` : ''}
+                <!-- Background Aesthetic Watermark on every page per user instruction -->
+                <div class="watermark">Es Bangla</div>
 
                 <!-- Page Content Area -->
                 <div class="page-body">
@@ -187,11 +185,12 @@ function generateHtml(data) {
                     </div>
                 </div>
 
-                <!-- Clean Footer Bar (NO DIVIDER LINE, Notice only 1-2 times, Clean page number) -->
-                <div class="pdf-footer">
-                    <div class="pdf-footer-left">${showNotice ? '© Es Bangla • ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে' : ''}</div>
-                    <div class="pdf-footer-right">পৃষ্ঠা ${toBengaliNumber(pageIdx + 1)} / ${toBengaliNumber(totalPages)}</div>
-                </div>
+                <!-- Footer: No page numbers, clean centered notice on Page 1 -->
+                ${showNotice ? `
+                    <div class="pdf-footer">
+                        <div class="pdf-footer-note">© Es Bangla • শুধুমাত্র ছাত্র-ছাত্রীদের সুবিধার জন্য বানানো হয়েছে</div>
+                    </div>
+                ` : '<div class="pdf-footer-empty"></div>'}
             </div>
         `;
     }).join('');
@@ -373,26 +372,26 @@ function generateHtml(data) {
             z-index: 1;
             margin-top: auto;
             padding-top: 2mm;
-            border-top: none; /* Completely removed per user instruction */
+            border-top: none;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             font-family: 'Noto Serif Bengali', serif;
             color: #64748B;
         }
 
-        .pdf-footer-left {
+        .pdf-footer-note {
             font-size: 8pt;
             font-weight: 600;
             color: #64748B;
             letter-spacing: 0.2px;
+            text-align: center;
         }
 
-        .pdf-footer-right {
-            font-size: 8.5pt;
-            font-weight: 700;
-            color: #0066FF;
-            margin-left: auto;
+        .pdf-footer-empty {
+            height: 0;
+            margin: 0;
+            padding: 0;
         }
 
         @media screen {
