@@ -547,6 +547,7 @@ async function main() {
             printBackground: true,
             displayHeaderFooter: false,
             preferCSSPageSize: true,
+            tagged: false,
             margin: {
                 top: '0mm',
                 bottom: '0mm',
