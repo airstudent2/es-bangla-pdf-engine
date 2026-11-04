@@ -44,6 +44,12 @@ jobs:
       - name: Compact & Losslessly Optimize PDFs
         run: python3 scripts/compact_pdfs.py
 
+      - name: Optimize Thumbnails
+        run: |
+          pip install pillow
+          python3 scripts/optimize_thumbnails.py
+          zip -j output_thumbnails.zip output_thumbnails/*.png
+
       - name: Upload PDF Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -51,7 +57,7 @@ jobs:
           path: output_pdfs/*.pdf
           retention-days: 30
 
-      - name: Release PDFs
+      - name: Release PDFs and Optimized Thumbnails
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
@@ -59,6 +65,10 @@ jobs:
           name: "Es Bangla Educational Notes PDFs"
           draft: false
           prerelease: false
-          files: output_pdfs/*.pdf
+          files: |
+            output_pdfs/*.pdf
+            output_thumbnails.zip
+            output_thumbnails/*.png
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

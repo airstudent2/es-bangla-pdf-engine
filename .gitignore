@@ -7,3 +7,6 @@ extracted_pages_*/
 *_page.html
 bengali_step*.txt
 education_extracted_raw.txt
+output_pdfs/
+output_thumbnails/
+output_thumbnails.zip
